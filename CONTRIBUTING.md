@@ -2,7 +2,7 @@
 
 Thank you for contributing to the RapidResponse-IDSS project! To maintain codebase integrity, prevent merge conflicts, and enforce quality control, please adhere strictly to the following guidelines.
 
-## 🌿 Repository Branch Hierarchy
+## Repository Branch Hierarchy
 
 To ensure stable deployments, all feature developments follow a strict multi-tier branching tree structure:
 

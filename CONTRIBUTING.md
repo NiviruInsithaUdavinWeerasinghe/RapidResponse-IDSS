@@ -1,13 +1,6 @@
-# RapidResponse-IDSS
+# RapidResponse-IDSS Contribution Guidelines
 
-An Intelligent Disaster Relief Decision Support System (SDR-DSS) designed to coordinate flood rescue operations, resource distribution, and evacuation logistics.
-
-## 🛠️ Tech Stack & Workspace Structure
-The project workspace is divided into two primary logical directories:
-*   **`frontend/`**: Vite React single-page application styled with Tailwind CSS v4 and optimized with Oxlint rules.
-*   **`backend/`**: Logical structure holding the backend algorithms and server components.
-
----
+Thank you for contributing to the RapidResponse-IDSS project! To maintain codebase integrity, prevent merge conflicts, and enforce quality control, please adhere strictly to the following guidelines.
 
 ## 🌿 Repository Branch Hierarchy
 

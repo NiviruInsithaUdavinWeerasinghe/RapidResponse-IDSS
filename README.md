@@ -1,62 +1,79 @@
-# RapidResponse-IDSS
+# RapidResponse IDSS
 
-An Intelligent Disaster Relief Decision Support System (SDR-DSS) designed to coordinate flood rescue operations, resource distribution, and evacuation logistics during severe weather crises.
-
----
-
-## Tech Stack & Workspace Structure
-The project workspace is divided into two primary logical directories:
-*   **`frontend/`**: Vite React single-page application styled with Tailwind CSS v4 and optimized with Oxlint rules.
-*   **`backend/`**: Logical structure holding the backend algorithms and server components.
+This is a desktop program for emergency response and rescue operations. It handles vehicle routes, resource packing, network checking, and delivery tours.
 
 ---
 
-## Key Modules & Algorithms
+## How the Code is Organized
 
-### Module 1: Route Optimization (A* & Dijkstra Pathfinding)
-*   **Purpose:** Identifies optimal traversal paths for rescue vessels and vehicles through flooded grid terrains.
-*   **Algorithms:** Comparative visualization of Dijkstra's algorithm and A* heuristic pathfinding, resolving blockages and speed-restricted water grids.
+The project uses a modular monolith design. Each team pair works in their own folder. The main launcher runs everything together inside a single program to save computer memory and start up fast.
 
-### Module 2: Intelligent Resource Allocation (0/1 Knapsack)
-*   **Purpose:** Maximizes survival supplies loaded into rescue helicopters without exceeding maximum payload capacity.
-*   **Algorithms:** Branch & Bound state-space tree traversal contrasted with a Greedy 2-Approximation heuristic.
-
-### Module 3: Infrastructure Connectivity Analysis (Kruskal's MST)
-*   **Purpose:** Tracks and maintains vital road networks connecting supply bases and isolation shelters.
-*   **Algorithms:** Kruskal's Minimum Spanning Tree (MST) using a Disjoint Set Union (DSU) data structure to detect critical path failures.
-
-### Module 4: Intelligent Disaster Relief Decisions (Decision Matrix)
-*   **Purpose:** Prioritizes victim groups and supply dispatches based on severity, vulnerability, and capacity constraints.
-*   **Algorithms:** Multi-Criteria Decision Analysis (MCDA) matrix calculation.
-
-### Module 5: Transport Sequencing & TSP (Held-Karp dynamic programming)
-*   **Purpose:** Sequences optimal delivery tours for rescue aircraft visiting multiple shelters and returning to HQ.
-*   **Algorithms:** Held-Karp dynamic programming algorithm for exact Travelling Salesperson Problem (TSP) tour computation, coupled with a 2-Opt local search refinement heuristic.
+*   `core-application/` - The main startup package that runs the program.
+*   `module-shared-algorithms/` - Shared mathematical solver engines.
+*   `module-route-optimization/` - Dijkstra & A* pathfinders (Module 1).
+*   `module-resource-allocation/` - Knapsack payload packing solvers (Module 2).
+*   `module-network-analysis/` - Connectivity checks & Kruskal MST (Module 3).
+*   `module-intelligent-decision/` - Priority score normalizers (Module 4).
+*   `module-route-sequencing/` - Held-Karp dynamic programming & 2-Opt TSP tours (Module 5).
+*   `frontend/` - React user interface.
 
 ---
 
-## Getting Started
+## Tech Stack
 
-### Prerequisites
-*   Node.js (v18+)
-*   npm (v9+)
-
-### Installation
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/NiviruInsithaUdavinWeerasinghe/RapidResponse-IDSS.git
-    ```
-2.  Navigate to the frontend folder and install dependencies:
-    ```bash
-    cd RapidResponse-IDSS/frontend
-    npm install
-    ```
-3.  Start the development server:
-    ```bash
-    npm run dev
-    ```
+*   **Frontend:** React, Vite, Tailwind CSS v4, Lucide React, HTML/CSS/JavaScript
+*   **Backend:** Java 17, Spring Boot, Spring Data JPA, Spring Security
+*   **Database:** PostgreSQL (Supabase Cloud Database)
+*   **Libraries:** Lombok, MapStruct, SpringDoc (Swagger UI), Spring Validation
 
 ---
 
-## Contribution Guidelines
-For details on branching hierarchy (`develop` ➔ `development/module-X/...`) and our Pull Request workflow, please refer to our [Contribution Guidelines](CONTRIBUTING.md).
+## How to Set Up and Run
+
+### 1. Prerequisites
+Install these on your computer:
+*   Java JDK 17 or higher
+*   Node.js (LTS version)
+
+---
+
+### 2. Backend Setup
+1. Create a file named `application-local.yml` inside the `core-application/src/main/resources/` folder.
+2. Paste the shared Supabase connection details in it (this file is ignored by Git to keep credentials safe):
+   ```yaml
+   spring:
+     datasource:
+       url: jdbc:postgresql://INSERT_SHARED_DB_HOST_HERE:5432/postgres
+       username: INSERT_SHARED_USERNAME_HERE
+       password: INSERT_SHARED_PASSWORD_HERE
+   ```
+3. Open your terminal in the root project folder and run the builder:
+   *   **Windows:**
+       ```powershell
+       .\mvnw.cmd clean install
+       java -jar core-application/target/core-application-1.0.0.jar
+       ```
+   *   **Mac/Linux:**
+       ```bash
+       chmod +x mvnw
+       ./mvnw clean install
+       java -jar core-application/target/core-application-1.0.0.jar
+       ```
+4. Test the backend APIs using Swagger in your browser:
+   *   Open: `http://localhost:8080/swagger-ui.html`
+
+---
+
+### 3. Frontend Setup
+1. Open a new terminal and go to the frontend folder:
+   ```bash
+   cd frontend
+   ```
+2. Install the packages:
+   ```bash
+   npm install
+   ```
+3. Run the frontend:
+   ```bash
+   npm run dev
+   ```

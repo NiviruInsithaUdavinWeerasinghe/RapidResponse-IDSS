@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Maven builds
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Local configurations containing private credentials
+**/application-local.yml
+**/application-local.properties
+

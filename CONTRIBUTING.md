@@ -17,7 +17,7 @@ Repository Branch Hierarchy:
 │       │
 │       ├── development/module-2/resource-allocation (Module 2 Base)
 │       │   ├── development/module-2/gajindu
-│       │   └── development/module-2/raeed
+│       │   └── development/module-2/raaed
 │       │
 │       ├── development/module-3/network-analysis (Module 3 Base)
 │       │   ├── development/module-3/sasundul

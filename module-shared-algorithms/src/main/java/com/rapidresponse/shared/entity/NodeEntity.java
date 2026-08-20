@@ -1,6 +1,6 @@
-package com.rapidresponse.route.entity;
+package com.rapidresponse.shared.entity;
 
-import com.rapidresponse.route.model.NodeType;
+import com.rapidresponse.shared.model.NodeType;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

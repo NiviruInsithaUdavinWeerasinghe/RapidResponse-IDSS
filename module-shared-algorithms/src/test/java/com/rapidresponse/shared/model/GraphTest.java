@@ -1,4 +1,4 @@
-package com.rapidresponse.route.model;
+package com.rapidresponse.shared.model;
 
 import static org.junit.jupiter.api.Assertions.*;
 

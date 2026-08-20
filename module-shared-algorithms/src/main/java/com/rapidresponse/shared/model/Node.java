@@ -1,4 +1,4 @@
-package com.rapidresponse.route.model;
+package com.rapidresponse.shared.model;
 
 /**
  * Represents a node (location) in the disaster-zone road network graph.

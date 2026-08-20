@@ -1,7 +1,7 @@
-package com.rapidresponse.route.repository;
+package com.rapidresponse.shared.repository;
 
-import com.rapidresponse.route.entity.NodeEntity;
-import com.rapidresponse.route.model.NodeType;
+import com.rapidresponse.shared.entity.NodeEntity;
+import com.rapidresponse.shared.model.NodeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

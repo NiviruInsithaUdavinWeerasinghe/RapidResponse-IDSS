@@ -27,7 +27,7 @@ Repository Branch Hierarchy:
 │       │   ├── development/module-4/dulmina
 │       │   └── development/module-4/mesanda
 │       │
-│       └── development/module-5/route-sequencing (Module 5 Base)
+│       └── development/module-5/system-optimization (Module 5 Base — Optimization Module)
 │           ├── development/module-5/niviru
 │           └── development/module-5/evan
 ```

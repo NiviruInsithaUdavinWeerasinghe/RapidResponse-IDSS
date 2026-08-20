@@ -1,6 +1,6 @@
-package com.rapidresponse.route.repository;
+package com.rapidresponse.shared.repository;
 
-import com.rapidresponse.route.entity.EdgeEntity;
+import com.rapidresponse.shared.entity.EdgeEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

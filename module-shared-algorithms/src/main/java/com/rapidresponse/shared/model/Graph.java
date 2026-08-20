@@ -1,4 +1,4 @@
-package com.rapidresponse.route.model;
+package com.rapidresponse.shared.model;
 
 import java.util.ArrayList;
 import java.util.Collections;

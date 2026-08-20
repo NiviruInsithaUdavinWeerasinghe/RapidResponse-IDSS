@@ -1,4 +1,4 @@
-package com.rapidresponse.route.model;
+package com.rapidresponse.shared.model;
 
 /**
  * Represents a directed edge (road segment) in the disaster-zone road network graph.

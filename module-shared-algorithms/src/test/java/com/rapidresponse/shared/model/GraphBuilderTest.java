@@ -1,4 +1,4 @@
-package com.rapidresponse.route.model;
+package com.rapidresponse.shared.model;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -8,8 +8,8 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import com.rapidresponse.route.entity.EdgeEntity;
-import com.rapidresponse.route.entity.NodeEntity;
+import com.rapidresponse.shared.entity.EdgeEntity;
+import com.rapidresponse.shared.entity.NodeEntity;
 
 /**
  * Unit tests for GraphBuilder: constructing a Graph from JPA entities.
@@ -24,8 +24,8 @@ class GraphBuilderTest {
                 new NodeEntity(3L, "Junction", 7.31, 80.65, NodeType.INTERSECTION)
         );
 
-        EdgeEntity edge1 = new EdgeEntity(1L, 2L, 5.0, 10.0, false, false);
-        EdgeEntity edge2 = new EdgeEntity(2L, 3L, 3.0, 6.0, false, false);
+        EdgeEntity edge1 = new EdgeEntity(1L, 2L, 5.0, 10.0, false, true);
+        EdgeEntity edge2 = new EdgeEntity(2L, 3L, 3.0, 6.0, false, true);
         List<EdgeEntity> edges = Arrays.asList(edge1, edge2);
 
         Graph graph = GraphBuilder.build(nodes, edges);
@@ -44,7 +44,7 @@ class GraphBuilderTest {
                 new NodeEntity(2L, "B", 0, 0, NodeType.INTERSECTION)
         );
 
-        EdgeEntity undirectedEdge = new EdgeEntity(1L, 2L, 4.0, 8.0, false, true);
+        EdgeEntity undirectedEdge = new EdgeEntity(1L, 2L, 4.0, 8.0, false, false);
         List<EdgeEntity> edges = Collections.singletonList(undirectedEdge);
 
         Graph graph = GraphBuilder.build(nodes, edges);
@@ -61,7 +61,7 @@ class GraphBuilderTest {
                 new NodeEntity(2L, "B", 0, 0, NodeType.INTERSECTION)
         );
 
-        EdgeEntity blockedEdge = new EdgeEntity(1L, 2L, 4.0, 8.0, true, false);
+        EdgeEntity blockedEdge = new EdgeEntity(1L, 2L, 4.0, 8.0, true, true);
         List<EdgeEntity> edges = Collections.singletonList(blockedEdge);
 
         Graph graph = GraphBuilder.build(nodes, edges);

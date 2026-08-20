@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 
+      CORE APPLICATION BOOTSTRAPPER POM (The Packager Config)
+      This sub-project represents the main application launcher.
+      It imports all 5 custom code modules as dependencies, includes Spring Boot libraries,
+      and packages everything together into a single, executable .jar file.
+    -->
+    <parent>
+        <groupId>com.rapidresponse</groupId>
+        <artifactId>rapidresponse-parent</artifactId>
+        <version>1.0.0</version>
+    </parent>
+
+    <artifactId>core-application</artifactId>
+    <name>Core Main Bootstrap Application</name>
+
+    <dependencies>
+        <!-- Spring Boot Web: Sets up the web server (Tomcat) so we can accept REST API requests -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        
+        <!-- Spring Security: Controls user roles, logins, and API access privileges -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!-- Spring Data JPA: Connects Java code models to Postgres database tables -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+
+        <!-- PostgreSQL Database Driver: Connects our application to PostgreSQL or Supabase -->
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Spring Boot DevTools: Restarts the server instantly whenever you modify code -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-devtools</artifactId>
+            <scope>runtime</scope>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Lombok Library: Tells compilation tools we are using Lombok auto-getters/setters -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- 
+          SPRINGDOC OPENAPI / SWAGGER UI 
+          Automatically builds an interactive API testing page in your browser.
+          
+          EXAMPLE USAGE:
+          1. Start the Spring Boot application.
+          2. Open browser to: http://localhost:8080/swagger-ui.html
+          3. You will see a clean dashboard list of all your REST endpoints.
+          4. Click "Try it out" on an endpoint to execute request tests and see live JSON results.
+        -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+
+        <!-- 
+          SPRING BOOT VALIDATION
+          Checks if client input data is valid before running any algorithm code.
+          
+          EXAMPLE USAGE:
+          1. Annotate properties on DTO classes:
+             public class OrderDto {
+                 @NotNull
+                 private Long id;
+                 
+                 @Positive(message = "Weight must be positive")
+                 private double weightKg;
+             }
+          2. Bind validation checks in Controller:
+             @PostMapping("/greedy")
+             public ResponseEntity<Result> run(@Valid @RequestBody OrderDto dto) { ... }
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- 
+          MAPSTRUCT MODEL MAPPER
+          Auto-generates conversion code between database objects (Entities) and API models (DTOs).
+          
+          EXAMPLE USAGE:
+          1. Write mapper interface:
+             @Mapper(componentModel = "spring")
+             public interface OrderMapper {
+                 OrderDto entityToDto(OrderEntity entity);
+             }
+          2. Inject and map cleanly in one line without getters/setters boilerplate:
+             OrderDto dto = orderMapper.entityToDto(savedEntity);
+        -->
+        <dependency>
+            <groupId>org.mapstruct</groupId>
+            <artifactId>mapstruct</artifactId>
+        </dependency>
+
+        <!-- 
+          INTERNAL SYSTEM MODULE DEPENDENCIES
+          We import all 5 separate algorithm module folders here.
+          This merges our clean codebase folders into a single execution program.
+        -->
+        <dependency>
+            <groupId>com.rapidresponse</groupId>
+            <artifactId>module-shared-algorithms</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rapidresponse</groupId>
+            <artifactId>module-route-optimization</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rapidresponse</groupId>
+            <artifactId>module-resource-allocation</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rapidresponse</groupId>
+            <artifactId>module-network-analysis</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rapidresponse</groupId>
+            <artifactId>module-intelligent-decision</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.rapidresponse</groupId>
+            <artifactId>module-route-sequencing</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- 
+              SPRING BOOT MAVEN PLUGIN
+              This builds our separate folders into a single executable .jar file.
+              You can run this jar with a simple 'java -jar application.jar' command, 
+              which can then be packaged into a standalone .exe for the user.
+            -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <version>${spring-boot.version}</version>
+                <configuration>
+                    <!-- Excludes Lombok from the final jar as it is only needed during development compilation -->
+                    <excludes>
+                        <exclude>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                        </exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

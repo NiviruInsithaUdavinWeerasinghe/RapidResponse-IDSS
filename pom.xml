@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- 
+      PARENT POM CONFIGURATION (The Leader Config)
+      This file is the main leader. It defines global project information, 
+      specifies helper library versions (like Spring Boot, Lombok, MapStruct),
+      and lists all the modules (folders) that make up this project.
+    -->
+    <groupId>com.rapidresponse</groupId>
+    <artifactId>rapidresponse-parent</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+
+    <name>RapidResponse IDSS parent</name>
+
+    <properties>
+        <java.version>17</java.version>
+        <!-- The version of Spring Boot we are using -->
+        <spring-boot.version>3.2.5</spring-boot.version>
+        <!-- Lombok version: Used to automatically write getters, setters, constructors -->
+        <lombok.version>1.18.30</lombok.version>
+        <!-- MapStruct version: Used to translate database objects to API data transfer objects -->
+        <mapstruct.version>1.5.5.Final</mapstruct.version>
+        <!-- SpringDoc Swagger UI version: Used to generate interactive API testing docs -->
+        <springdoc.version>2.5.0</springdoc.version>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+    </properties>
+
+    <!-- LIST OF SUB-FOLDERS (MODULES) IN THE PROJECT -->
+    <modules>
+        <!-- Shared utility algorithms for knapsack bounds and subsets -->
+        <module>module-shared-algorithms</module>
+        <!-- Module 1: Dijkstra and A* pathfinders -->
+        <module>module-route-optimization</module>
+        <!-- Module 2: Knapsack resource allocation solvers -->
+        <module>module-resource-allocation</module>
+        <!-- Module 3: Union-Find component connectivity and MST Kruskal -->
+        <module>module-network-analysis</module>
+        <!-- Module 4: MCDA composite score normalizers -->
+        <module>module-intelligent-decision</module>
+        <!-- Module 5: Held-Karp dynamic programming and 2-Opt TSP tour builders -->
+        <module>module-route-sequencing</module>
+        <!-- Main execution bootstrap folder that starts the Spring Boot server -->
+        <module>core-application</module>
+    </modules>
+
+    <!-- GLOBAL LIBRARY MANAGER (Prevents version conflicts across modules) -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Boot Framework Core -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-dependencies</artifactId>
+                <version>${spring-boot.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            
+            <!-- Lombok (Reduces boilerplate getter/setter code) -->
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <!-- MapStruct (Auto-maps entities to DTOs) -->
+            <dependency>
+                <groupId>org.mapstruct</groupId>
+                <artifactId>mapstruct</artifactId>
+                <version>${mapstruct.version}</version>
+            </dependency>
+
+            <!-- SpringDoc OpenAPI (Swagger UI Web client interface) -->
+            <dependency>
+                <groupId>org.springdoc</groupId>
+                <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+                <version>${springdoc.version}</version>
+            </dependency>
+            
+            <!-- 
+              MODULE REGISTER
+              We register all sub-modules here so they can easily refer to 
+              each other during compilation without version conflicts.
+            -->
+            <dependency>
+                <groupId>com.rapidresponse</groupId>
+                <artifactId>module-shared-algorithms</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rapidresponse</groupId>
+                <artifactId>module-route-optimization</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rapidresponse</groupId>
+                <artifactId>module-resource-allocation</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rapidresponse</groupId>
+                <artifactId>module-network-analysis</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rapidresponse</groupId>
+                <artifactId>module-intelligent-decision</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.rapidresponse</groupId>
+                <artifactId>module-route-sequencing</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- COMPILER CONFIGURATION (Sets up Lombok and MapStruct auto-code generation) -->
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.11.0</version>
+                    <configuration>
+                        <source>${java.version}</source>
+                        <target>${java.version}</target>
+                        <annotationProcessorPaths>
+                            <!-- Tells Maven compiler to build Lombok getters/setters during compilation -->
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok</artifactId>
+                                <version>${lombok.version}</version>
+                            </path>
+                            <!-- Tells Maven compiler to build MapStruct mapper code during compilation -->
+                            <path>
+                                <groupId>org.mapstruct</groupId>
+                                <artifactId>mapstruct-processor</artifactId>
+                                <version>${mapstruct.version}</version>
+                            </path>
+                        </annotationProcessorPaths>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
+</project>

@@ -1,128 +1,79 @@
-# RapidResponse-IDSS
+# RapidResponse IDSS
 
-An Intelligent Disaster Relief Decision Support System (SDR-DSS) designed to coordinate flood rescue operations, resource distribution, and evacuation logistics.
-
-## 🛠️ Tech Stack & Workspace Structure
-The project workspace is divided into two primary logical directories:
-*   **`frontend/`**: Vite React single-page application styled with Tailwind CSS v4 and optimized with Oxlint rules.
-*   **`backend/`**: Logical structure holding the backend algorithms and server components.
+This is a desktop program for emergency response and rescue operations. It handles vehicle routes, resource packing, network checking, and delivery tours.
 
 ---
 
-## 🌿 Repository Branch Hierarchy
+## How the Code is Organized
 
-To ensure stable deployments, all feature developments follow a strict multi-tier branching tree structure:
+The project uses a modular monolith design. Each team pair works in their own folder. The main launcher runs everything together inside a single program to save computer memory and start up fast.
 
-```text
-Repository Branch Hierarchy:
-├── main (Production / Stable Releases)
-│   └── develop (Core Shared Development Integration Branch)
-│       │
-│       ├── development/module-1/route-optimization (Module 1 Base)
-│       │   ├── development/module-1/kisandu
-│       │   └── development/module-1/nethmi
-│       │
-│       ├── development/module-2/resource-allocation (Module 2 Base)
-│       │   ├── development/module-2/gajindu
-│       │   └── development/module-2/raeed
-│       │
-│       ├── development/module-3/network-analysis (Module 3 Base)
-│       │   ├── development/module-3/sasundul
-│       │   └── development/module-3/niragi
-│       │
-│       ├── development/module-4/intelligent-decision (Module 4 Base)
-│       │   ├── development/module-4/dulmina
-│       │   └── development/module-4/mesanda
-│       │
-│       └── development/module-5/system-optimization (Module 5 Base)
-│           ├── development/module-5/niviru
-│           └── development/module-5/evan
-```
+*   `core-application/` - The main startup package that runs the program.
+*   `module-shared-algorithms/` - Shared mathematical solver engines.
+*   `module-route-optimization/` - Dijkstra & A* pathfinders (Module 1).
+*   `module-resource-allocation/` - Knapsack payload packing solvers (Module 2).
+*   `module-network-analysis/` - Connectivity checks & Kruskal MST (Module 3).
+*   `module-intelligent-decision/` - Priority score normalizers (Module 4).
+*   `module-route-sequencing/` - Held-Karp dynamic programming & 2-Opt TSP tours (Module 5).
+*   `frontend/` - React user interface.
 
 ---
 
-# Team Git & GitHub Workflow
+## Tech Stack
 
-## Phase 1: Planning (On GitHub)
-Before starting any development, the task must exist as an issue on GitHub.
-
-1. Go to the **Issues** tab on GitHub.
-2. Click **New Issue**. Add a title and description of the feature or bug.
-3. Note the number assigned to the issue (e.g., `#5`). You will reference this in your commits.
-4. Assign the issue to yourself.
+*   **Frontend:** React, Vite, Tailwind CSS v4, Lucide React, HTML/CSS/JavaScript
+*   **Backend:** Java 17, Spring Boot, Spring Data JPA, Spring Security
+*   **Database:** PostgreSQL (Supabase Cloud Database)
+*   **Libraries:** Lombok, MapStruct, SpringDoc (Swagger UI), Spring Validation
 
 ---
 
-## Phase 2: Starting the Work (In PowerShell)
-Never start coding until you have pulled the latest changes from your module's base branch and created your isolated workspace.
+## How to Set Up and Run
 
-1. Fetch and checkout your module's base branch (e.g. `development/module-1/route-optimization`):
-   ```powershell
-   git checkout develop
-   git pull origin develop
-   git checkout development/module-1/route-optimization
-   git pull origin development/module-1/route-optimization
-   ```
-2. Create your individual dev branch:
-   *(Must be branched off your module's base, e.g., `development/module-1/kisandu`)*
-   ```powershell
-   git checkout -b development/module-1/your-name
-   ```
+### 1. Prerequisites
+Install these on your computer:
+*   Java JDK 17 or higher
+*   Node.js (LTS version)
 
 ---
 
-## Phase 3: Coding & Saving (In Your IDE & PowerShell)
-Once your work is implemented, buildable, and tested locally:
-
-1. Stage your modified files:
-   ```powershell
-   git add .
+### 2. Backend Setup
+1. Create a file named `application-local.yml` inside the `core-application/src/main/resources/` folder.
+2. Paste the shared Supabase connection details in it (this file is ignored by Git to keep credentials safe):
+   ```yaml
+   spring:
+     datasource:
+       url: jdbc:postgresql://INSERT_SHARED_DB_HOST_HERE:5432/postgres
+       username: INSERT_SHARED_USERNAME_HERE
+       password: INSERT_SHARED_PASSWORD_HERE
    ```
-2. Commit your progress:
-   *(Always include "Refs #IssueNumber" so GitHub automatically links the issue)*
-   ```powershell
-   git commit -m "Feat: Implement dynamic path visualization (Refs #5)"
-   ```
-3. Push your branch up to GitHub:
-   ```powershell
-   git push -u origin development/module-1/your-name
-   ```
+3. Open your terminal in the root project folder and run the builder:
+   *   **Windows:**
+       ```powershell
+       .\mvnw.cmd clean install
+       java -jar core-application/target/core-application-1.0.0.jar
+       ```
+   *   **Mac/Linux:**
+       ```bash
+       chmod +x mvnw
+       ./mvnw clean install
+       java -jar core-application/target/core-application-1.0.0.jar
+       ```
+4. Test the backend APIs using Swagger in your browser:
+   *   Open: `http://localhost:8080/swagger-ui.html`
 
 ---
 
-## Phase 4: Review and Merge (On GitHub)
-**Never merge your own code.** Another member of your module team must review it.
-
-### 1. Create the Pull Request (The Developer):
-* Go to the GitHub repository.
-* Click the **Pull requests** tab, then click **New pull request**.
-* **Base target:** Choose your module base branch (e.g., `development/module-1/route-optimization`).
-* **Compare branch:** Choose your dev branch (e.g., `development/module-1/your-name`).
-* Click **Create pull request**.
-
-### 2. Review and Merge (The Reviewer):
-* Open the Pull Request.
-* Inspect the **Files changed** tab to verify readability, correctness, and that no files were broken.
-* Approve and click **Merge pull request**.
-* Click **Delete branch** on GitHub immediately after merging to keep the remote workspace tidy.
-
----
-
-## Phase 5: Cleanup & Synchronization (In PowerShell)
-Once merged, remove the merged branch from your local environment.
-
-1. Switch back to your module base branch and pull the merged code:
-   ```powershell
-   git checkout development/module-1/route-optimization
-   git pull origin development/module-1/route-optimization
+### 3. Frontend Setup
+1. Open a new terminal and go to the frontend folder:
+   ```bash
+   cd frontend
    ```
-2. Delete your local dev branch:
-   ```powershell
-   git branch -d development/module-1/your-name
+2. Install the packages:
+   ```bash
+   npm install
    ```
-3. Clear deleted branches from your local cache:
-   ```powershell
-   git fetch --prune
+3. Run the frontend:
+   ```bash
+   npm run dev
    ```
-
-> **Note:** Following this strict merge workflow (Dev Branch ➔ Module Base ➔ Develop ➔ Main) prevents file overwrites and keeps Git history clean.

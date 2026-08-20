@@ -11,7 +11,7 @@
     </parent>
 
     <artifactId>module-route-sequencing</artifactId>
-    <name>Module 5: Route Sequencing (TSP)</name>
+    <name>Module 5: Optimization Module</name>
 
     <dependencies>
         <dependency>

@@ -11,7 +11,7 @@ import java.util.Set;
  * In-memory Graph data structure using an Adjacency List representation.
  * Optimized for the disaster-zone road network with O(V + E) space complexity.
  * <p>
- * Consumed by Modules 1 (Route Optimization), 3 (Resource Allocation), and 5 (Route Sequencing).
+ * Consumed by Modules 1 (Route Optimization), 3 (Resource Allocation), and 5 (Optimization).
  */
 public class Graph {
 

@@ -17,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
         @Tag(name = "Resource Allocation", description = "Endpoints for knapsack-based resource allocation packing"),
         @Tag(name = "Network Analysis", description = "Endpoints for road network connectivity and MST calculations"),
         @Tag(name = "Intelligent Decision", description = "Endpoints for scoring and ranking emergency SOS requests"),
-        @Tag(name = "Route Sequencing", description = "Endpoints for sequencing camp delivery routes (TSP)"),
+        @Tag(name = "Optimization", description = "Endpoints for sequencing camp delivery routes (TSP / Held-Karp & 2-opt)"),
         @Tag(name = "Pipeline", description = "Endpoints for end-to-end multi-module pipeline execution"),
         @Tag(name = "Benchmark", description = "Endpoints for benchmarking and comparing algorithms performance")
     }

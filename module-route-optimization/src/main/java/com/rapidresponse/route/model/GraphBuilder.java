@@ -2,8 +2,10 @@ package com.rapidresponse.route.model;
 
 import java.util.List;
 
-import com.rapidresponse.route.entity.EdgeEntity;
-import com.rapidresponse.route.entity.NodeEntity;
+import com.rapidresponse.shared.entity.EdgeEntity;
+import com.rapidresponse.shared.entity.NodeEntity;
+import com.rapidresponse.shared.model.Graph;
+import com.rapidresponse.shared.model.Node;
 
 /**
  * Utility class that constructs an in-memory {@link Graph} from database
@@ -36,18 +38,25 @@ public class GraphBuilder {
 
         // Add edges (skipping blocked edges)
         for (EdgeEntity entity : edgeEntities) {
+
+            // Skip blocked roads
             if (entity.isBlocked()) {
                 continue;
             }
 
-            if (entity.isUndirected()) {
+            // Two-way road
+            if (!entity.isOneWay()) {
+
                 graph.addUndirectedEdge(
                         entity.getSourceId(),
                         entity.getTargetId(),
                         entity.getDistanceKm(),
                         entity.getTravelTimeMins()
                 );
+
             } else {
+
+                // One-way road
                 graph.addEdge(
                         entity.getSourceId(),
                         entity.getTargetId(),

@@ -1,22 +1,21 @@
-package com.rapidresponse.allocation.entity;
+package com.rapidresponse.resource.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "resources")
+@Table(name = "helicopters")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ResourceEntity {
+public class HelicopterEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String name;
-    private int weight;
-    private int value;
-    private String category;
+    private String callSign;
+    private double maxPayloadKg;
+    private String status;
 }

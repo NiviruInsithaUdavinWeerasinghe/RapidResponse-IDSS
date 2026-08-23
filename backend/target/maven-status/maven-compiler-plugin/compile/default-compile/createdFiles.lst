@@ -1,0 +1,6 @@
+com\rapidresponse\route\algorithm\PathResult.class
+com\rapidresponse\route\algorithm\DijkstraPathfinder.class
+com\rapidresponse\route\algorithm\DijkstraPathfinder$NodeDistancePair.class
+com\rapidresponse\route\algorithm\Graph.class
+com\rapidresponse\route\algorithm\Node.class
+com\rapidresponse\route\algorithm\Edge.class

@@ -14,10 +14,14 @@ public class DijkstraPathfinder {
      * @return PathResult containing the path, status, distance, and nodes explored.
      */
     public PathResult findShortestPath(Graph graph, Node source, Node target) {
+        long startTimeNanos = System.nanoTime();
+
         // Initializes distances to infinity
         Map<Node, Double> distances = new HashMap<>();
+        Map<Node, Double> travelTimes = new HashMap<>();
         for (Node node : graph.getNodes()) {
             distances.put(node, Double.POSITIVE_INFINITY);
+            travelTimes.put(node, 0.0);
         }
 
         // Sets source distance to 0
@@ -34,21 +38,23 @@ public class DijkstraPathfinder {
 
         while (!minHeap.isEmpty()) {
             NodeDistancePair currentPair = minHeap.poll();
+            
+            // Accurately records every node dequeued from the priority queue
+            nodesExplored++;
+
             Node currentNode = currentPair.node;
             double currentDist = currentPair.distance;
 
             // Early termination when the target node is popped
             if (currentNode.equals(target)) {
-                return buildPathResult(target, parentMap, distances.get(target), nodesExplored);
+                long executionTimeNanos = System.nanoTime() - startTimeNanos;
+                return buildPathResult(target, parentMap, distances.get(target), travelTimes.get(target), nodesExplored, executionTimeNanos);
             }
 
             // Skip if we found a shorter path to currentNode already
             if (currentDist > distances.get(currentNode)) {
                 continue;
             }
-
-            // Incrementing the nodesExplored counter when expanding a node
-            nodesExplored++;
 
             for (Edge edge : graph.getEdges(currentNode)) {
                 // Skips edges where isBlocked == true
@@ -57,33 +63,37 @@ public class DijkstraPathfinder {
                 }
 
                 Node neighbor = edge.getDestination();
-                double newDist = currentDist + edge.getWeight();
+                
+                // Assuming edge provides getDistance() for distance and getTravelTime() for time
+                double newDist = currentDist + edge.getDistance();
 
                 if (newDist < distances.get(neighbor)) {
                     distances.put(neighbor, newDist);
+                    travelTimes.put(neighbor, travelTimes.get(currentNode) + edge.getTravelTime());
                     parentMap.put(neighbor, currentNode);
                     minHeap.add(new NodeDistancePair(neighbor, newDist));
                 }
             }
         }
 
+        long executionTimeNanos = System.nanoTime() - startTimeNanos;
         // Correctly handles disconnected nodes returning a NO_PATH_FOUND result
-        return new PathResult("NO_PATH_FOUND", Collections.emptyList(), Double.POSITIVE_INFINITY, nodesExplored);
+        return new PathResult("NO_PATH_FOUND", Collections.emptyList(), Double.POSITIVE_INFINITY, 0.0, nodesExplored, executionTimeNanos);
     }
 
     /**
      * Backtracks the parent map to construct the path and returns the SUCCESS result.
      */
-    private PathResult buildPathResult(Node target, Map<Node, Node> parentMap, double totalDistance, int nodesExplored) {
-        List<Node> path = new ArrayList<>();
+    private PathResult buildPathResult(Node target, Map<Node, Node> parentMap, double totalDistance, double totalTravelTime, int nodesExplored, long executionTimeNanos) {
+        List<String> pathNodeIds = new ArrayList<>();
         Node current = target;
         while (current != null) {
-            path.add(current);
+            pathNodeIds.add(String.valueOf(current.getId()));
             current = parentMap.get(current);
         }
-        Collections.reverse(path);
+        Collections.reverse(pathNodeIds);
         
-        return new PathResult("SUCCESS", path, totalDistance, nodesExplored);
+        return new PathResult("SUCCESS", pathNodeIds, totalDistance, totalTravelTime, nodesExplored, executionTimeNanos);
     }
 
     // Helper class to store node and its current known distance for the PriorityQueue

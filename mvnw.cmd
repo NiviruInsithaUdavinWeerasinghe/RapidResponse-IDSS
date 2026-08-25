@@ -63,7 +63,7 @@
 
 :CheckJava
 @REM Run Maven Wrapper main class
-%JAVA_EXE% %MAVEN_OPTS% -classpath %WRAPPER_JAR% %WRAPPER_LAUNCHER% %*
+%JAVA_EXE% %MAVEN_OPTS% -Dmaven.multiModuleProjectDirectory="%DIRNAME:~0,-1%" -classpath %WRAPPER_JAR% %WRAPPER_LAUNCHER% %*
 @if %ERRORLEVEL% neq 0 goto error
 @goto end
 

@@ -22,7 +22,7 @@
         <!-- The version of Spring Boot we are using -->
         <spring-boot.version>3.2.5</spring-boot.version>
         <!-- Lombok version: Used to automatically write getters, setters, constructors -->
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.36</lombok.version>
         <!-- MapStruct version: Used to translate database objects to API data transfer objects -->
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <!-- SpringDoc Swagger UI version: Used to generate interactive API testing docs -->
@@ -128,7 +128,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.11.0</version>
+                    <version>3.13.0</version>
                     <configuration>
                         <source>${java.version}</source>
                         <target>${java.version}</target>
@@ -138,6 +138,11 @@
                                 <groupId>org.projectlombok</groupId>
                                 <artifactId>lombok</artifactId>
                                 <version>${lombok.version}</version>
+                            </path>
+                            <path>
+                                <groupId>org.projectlombok</groupId>
+                                <artifactId>lombok-mapstruct-binding</artifactId>
+                                <version>0.2.0</version>
                             </path>
                             <!-- Tells Maven compiler to build MapStruct mapper code during compilation -->
                             <path>

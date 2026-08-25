@@ -1,40 +1,30 @@
-package com.rapidresponse.decision.model;
+package com.rapidresponse.decision.dto.response;
 
 import com.rapidresponse.decision.entity.SOSStatus;
-import com.rapidresponse.shared.algorithm.Selectable;
-
 import java.time.LocalDateTime;
 
-/**
- * Domain model representing an SOS request in the decision-making pipeline.
- * Implements {@link Selectable} to seamlessly integrate with shared optimization solvers
- * (e.g. Branch & Bound and Greedy algorithms).
- */
-public class SOSRequest implements Selectable {
-
+public class SOSRequestResponse {
     private Long id;
     private Long campId;
     private String campName;
-    private double injurySeverity;   // Raw 1.0 - 10.0
-    private double population;       // Raw count (e.g. 10 - 2000)
-    private double supplyShortage;   // Raw 0.0 - 100.0%
-    private double requiredTrucks;   // Capacity / weight required (e.g. 1.0 - 10.0)
+    private double injurySeverity;
+    private double population;
+    private double supplyShortage;
+    private double requiredTrucks;
     private SOSStatus status;
     private LocalDateTime receivedAt;
-
-    // Normalization & Scoring metrics
     private double normalizedSeverity;
     private double normalizedPopulation;
     private double normalizedShortage;
     private double compositeScore;
 
-    public SOSRequest() {
+    public SOSRequestResponse() {
     }
 
-    public SOSRequest(Long id, Long campId, String campName, double injurySeverity,
-                      double population, double supplyShortage, double requiredTrucks,
-                      SOSStatus status, LocalDateTime receivedAt, double normalizedSeverity,
-                      double normalizedPopulation, double normalizedShortage, double compositeScore) {
+    public SOSRequestResponse(Long id, Long campId, String campName, double injurySeverity,
+                              double population, double supplyShortage, double requiredTrucks,
+                              SOSStatus status, LocalDateTime receivedAt, double normalizedSeverity,
+                              double normalizedPopulation, double normalizedShortage, double compositeScore) {
         this.id = id;
         this.campId = campId;
         this.campName = campName;
@@ -48,21 +38,6 @@ public class SOSRequest implements Selectable {
         this.normalizedPopulation = normalizedPopulation;
         this.normalizedShortage = normalizedShortage;
         this.compositeScore = compositeScore;
-    }
-
-    @Override
-    public double getValue() {
-        return compositeScore;
-    }
-
-    @Override
-    public double getWeight() {
-        return requiredTrucks > 0 ? requiredTrucks : 1.0;
-    }
-
-    @Override
-    public String getLabel() {
-        return "SOS-" + id + " [" + campName + "]";
     }
 
     public Long getId() { return id; }
@@ -116,29 +91,29 @@ public class SOSRequest implements Selectable {
         private double population;
         private double supplyShortage;
         private double requiredTrucks;
-        private SOSStatus status = SOSStatus.PENDING;
+        private SOSStatus status;
         private LocalDateTime receivedAt;
         private double normalizedSeverity;
         private double normalizedPopulation;
         private double normalizedShortage;
         private double compositeScore;
 
-        public Builder id(Long id) { this.id = id; return this; }
-        public Builder campId(Long campId) { this.campId = campId; return this; }
-        public Builder campName(String campName) { this.campName = campName; return this; }
-        public Builder injurySeverity(double injurySeverity) { this.injurySeverity = injurySeverity; return this; }
-        public Builder population(double population) { this.population = population; return this; }
-        public Builder supplyShortage(double supplyShortage) { this.supplyShortage = supplyShortage; return this; }
-        public Builder requiredTrucks(double requiredTrucks) { this.requiredTrucks = requiredTrucks; return this; }
-        public Builder status(SOSStatus status) { this.status = status; return this; }
-        public Builder receivedAt(LocalDateTime receivedAt) { this.receivedAt = receivedAt; return this; }
+        public Builder id(Long v) { this.id = v; return this; }
+        public Builder campId(Long v) { this.campId = v; return this; }
+        public Builder campName(String v) { this.campName = v; return this; }
+        public Builder injurySeverity(double v) { this.injurySeverity = v; return this; }
+        public Builder population(double v) { this.population = v; return this; }
+        public Builder supplyShortage(double v) { this.supplyShortage = v; return this; }
+        public Builder requiredTrucks(double v) { this.requiredTrucks = v; return this; }
+        public Builder status(SOSStatus v) { this.status = v; return this; }
+        public Builder receivedAt(LocalDateTime v) { this.receivedAt = v; return this; }
         public Builder normalizedSeverity(double v) { this.normalizedSeverity = v; return this; }
         public Builder normalizedPopulation(double v) { this.normalizedPopulation = v; return this; }
         public Builder normalizedShortage(double v) { this.normalizedShortage = v; return this; }
         public Builder compositeScore(double v) { this.compositeScore = v; return this; }
 
-        public SOSRequest build() {
-            return new SOSRequest(id, campId, campName, injurySeverity, population, supplyShortage, requiredTrucks,
+        public SOSRequestResponse build() {
+            return new SOSRequestResponse(id, campId, campName, injurySeverity, population, supplyShortage, requiredTrucks,
                     status, receivedAt, normalizedSeverity, normalizedPopulation, normalizedShortage, compositeScore);
         }
     }

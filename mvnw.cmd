@@ -31,7 +31,6 @@
 @REM     set MAVEN_OPTS=-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000
 @REM ----------------------------------------------------------------------------
 
-@signon
 @if "%MAVEN_BATCH_ECHO%" == "on"  echo %MAVEN_BATCH_ECHO%
 
 @setlocal

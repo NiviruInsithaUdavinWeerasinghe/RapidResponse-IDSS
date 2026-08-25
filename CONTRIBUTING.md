@@ -72,9 +72,9 @@ Once your work is implemented, buildable, and tested locally:
    git add .
    ```
 2. Commit your progress:
-   *(Always include "Refs #IssueNumber" so GitHub automatically links the issue)*
+   *(Always include closing keywords like "Closes #IssueNumber" or "Fixes #IssueNumber" in PR descriptions so GitHub automatically closes the issue upon merging)*
    ```powershell
-   git commit -m "Feat: Implement dynamic path visualization (Refs #5)"
+   git commit -m "Feat: Implement dynamic path visualization (Closes #5)"
    ```
 3. Push your branch up to GitHub:
    ```powershell

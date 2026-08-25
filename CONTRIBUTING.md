@@ -86,18 +86,22 @@ Once your work is implemented, buildable, and tested locally:
 ## Phase 4: Review and Merge (On GitHub)
 **Never merge your own code.** Another member of your module team must review it.
 
-### 1. Create the Pull Request (The Developer):
-* Go to the GitHub repository.
-* Click the **Pull requests** tab, then click **New pull request**.
-* **Base target:** Choose your module base branch (e.g., `development/module-1/route-optimization`).
-* **Compare branch:** Choose your dev branch (e.g., `development/module-1/your-name`).
-* Click **Create pull request**.
+To keep the branches fully synchronized, developers must create and merge PRs in a strict sequential progression:
 
-### 2. Review and Merge (The Reviewer):
-* Open the Pull Request.
-* Inspect the **Files changed** tab to verify readability, correctness, and that no files were broken.
-* Approve and click **Merge pull request**.
-* Click **Delete branch** on GitHub immediately after merging to keep the remote workspace tidy.
+### Step 1: Dev Branch ➔ Module Base Branch (e.g. `development/module-5/niviru` ➔ `development/module-5/system-optimization`)
+* **Create PR:** Target the module base branch from your individual dev branch.
+* **Description:** Add details and include a **closing keyword** (e.g., `Closes #25` or `Fixes #25`) at the bottom of the PR description so the issue automatically links and prepares to close.
+* **Review & Merge:** Team members review, approve, and merge.
+
+### Step 2: Module Base Branch ➔ `develop` Branch (e.g. `development/module-5/system-optimization` ➔ `develop`)
+* **Create PR:** Target the shared `develop` branch from your module base branch.
+* **Description:** Summarize changes and reference the issue (e.g., `Closes #25` or `Fixes #25`).
+* **Review & Merge:** Another module lead or team member reviews and merges.
+
+### Step 3: `develop` Branch ➔ `main` Branch (Production Release)
+* **Create PR:** Target `main` from the shared `develop` branch.
+* **Description:** Include summary and the closing keyword (e.g., `Closes #25` or `Fixes #25`). Once merged into `main`, GitHub will automatically mark the issue as completed and close it.
+* **Review & Merge:** Merge only after final integration verification succeeds.
 
 ---
 

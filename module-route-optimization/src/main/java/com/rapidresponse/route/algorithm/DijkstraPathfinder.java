@@ -15,6 +15,7 @@ import com.rapidresponse.shared.model.Graph;
  * Dijkstra shortest-path finder using a binary min-heap.
  * Time complexity: O((V + E) log V).
  */
+
 @Component
 public class DijkstraPathfinder {
 

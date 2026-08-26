@@ -1,6 +1,7 @@
 package com.rapidresponse.resource.service;
 
 import com.rapidresponse.resource.dto.request.AllocationRequest;
+import com.rapidresponse.resource.dto.request.HelicopterRequest;
 import com.rapidresponse.resource.dto.request.ReliefItemRequest;
 import com.rapidresponse.resource.dto.response.*;
 import com.rapidresponse.resource.entity.HelicopterEntity;
@@ -140,5 +141,15 @@ public class ResourceService {
     private HelicopterResponse toHelicopterResponse(HelicopterEntity entity) {
         return new HelicopterResponse(
                 entity.getId(), entity.getCallSign(), entity.getMaxPayloadKg(), entity.getStatus());
+    }
+    public HelicopterResponse addHelicopter(HelicopterRequest request) {
+        HelicopterEntity entity = HelicopterEntity.builder()
+                .callSign(request.callSign())
+                .maxPayloadKg(request.maxPayloadKg())
+                .status(request.status())
+                .build();
+
+        HelicopterEntity saved = helicopterRepository.save(entity);
+        return toHelicopterResponse(saved);
     }
 }

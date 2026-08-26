@@ -1,6 +1,7 @@
 package com.rapidresponse.resource.controller;
 
 import com.rapidresponse.resource.dto.request.AllocationRequest;
+import com.rapidresponse.resource.dto.request.HelicopterRequest;
 import com.rapidresponse.resource.dto.request.ReliefItemRequest;
 import com.rapidresponse.resource.dto.response.*;
 import com.rapidresponse.resource.service.ResourceService;
@@ -56,5 +57,11 @@ public class ResourceController {
     @GetMapping("/helicopters")
     public ResponseEntity<List<HelicopterResponse>> listHelicopters() {
         return ResponseEntity.ok(resourceService.listHelicopters());
+    }
+
+    @Operation(summary = "Add a new helicopter")
+    @PostMapping("/helicopters")
+    public ResponseEntity<HelicopterResponse> addHelicopter(@Valid @RequestBody HelicopterRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(resourceService.addHelicopter(request));
     }
 }

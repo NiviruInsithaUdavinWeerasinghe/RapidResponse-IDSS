@@ -2,14 +2,21 @@ package com.rapidresponse.resource.mapper;
 
 import com.rapidresponse.resource.entity.ReliefItemEntity;
 import com.rapidresponse.resource.model.ReliefItem;
-import org.mapstruct.Mapper;
+import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-@Mapper(componentModel = "spring")
-public interface ReliefItemMapper {
+@Component
+public class ReliefItemMapper {
 
-    ReliefItem toDomain(ReliefItemEntity entity);
+    public ReliefItem toDomain(ReliefItemEntity entity) {
+        if (entity == null) return null;
+        return new ReliefItem(entity.getId(), entity.getName(), entity.getWeightKg(), entity.getPriorityValue());
+    }
 
-    List<ReliefItem> toDomainList(List<ReliefItemEntity> entities);
+    public List<ReliefItem> toDomainList(List<ReliefItemEntity> entities) {
+        if (entities == null) return List.of();
+        return entities.stream().map(this::toDomain).collect(Collectors.toList());
+    }
 }

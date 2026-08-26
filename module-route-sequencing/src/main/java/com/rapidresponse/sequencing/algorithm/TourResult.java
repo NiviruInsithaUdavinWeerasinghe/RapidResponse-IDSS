@@ -1,10 +1,5 @@
 package com.rapidresponse.sequencing.algorithm;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.List;
 
 /**
@@ -13,45 +8,104 @@ import java.util.List;
  * <p>The {@code tourSequence} is a list of node indices (0-based) representing the
  * visit order, including the return leg back to the depot. For example, a 3-stop tour
  * starting at depot (index 0) looks like: {@code [0, 2, 1, 0]}.
- *
- * <p>Used by both Module 5 algorithm classes so that the compare endpoint can directly
- * contrast exact vs. heuristic results with a common type.
  */
-@Data
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
 public class TourResult {
 
-    /**
-     * Ordered list of node indices visited during the tour.
-     * The first and last element are both the depot (startNode).
-     * Size = problemSize + 1.
-     */
     private List<Integer> tourSequence;
-
-    /**
-     * Total road distance (sum of edge weights) along the optimal tour.
-     * Units match the input distance matrix (typically km).
-     */
     private double totalDistance;
-
-    /**
-     * Number of stop nodes in this tour (does NOT include the depot counted twice).
-     * Equals the number of rows/columns in the input distance matrix.
-     */
     private int problemSize;
-
-    /**
-     * Wall-clock execution time of the solver in nanoseconds.
-     * Measured with {@link System#nanoTime()}.
-     */
     private long executionTimeNanos;
-
-    /**
-     * Estimated heap memory consumed by the DP tables, in bytes.
-     * For Held-Karp: {@code n * 2^n * 8} bytes (one double per DP cell).
-     * For 2-opt: 0 (operates in-place on the tour array).
-     */
     private long memoryUsedBytes;
+
+    public TourResult() {
+    }
+
+    public TourResult(List<Integer> tourSequence, double totalDistance, int problemSize, long executionTimeNanos, long memoryUsedBytes) {
+        this.tourSequence = tourSequence;
+        this.totalDistance = totalDistance;
+        this.problemSize = problemSize;
+        this.executionTimeNanos = executionTimeNanos;
+        this.memoryUsedBytes = memoryUsedBytes;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public List<Integer> getTourSequence() {
+        return tourSequence;
+    }
+
+    public void setTourSequence(List<Integer> tourSequence) {
+        this.tourSequence = tourSequence;
+    }
+
+    public double getTotalDistance() {
+        return totalDistance;
+    }
+
+    public void setTotalDistance(double totalDistance) {
+        this.totalDistance = totalDistance;
+    }
+
+    public int getProblemSize() {
+        return problemSize;
+    }
+
+    public void setProblemSize(int problemSize) {
+        this.problemSize = problemSize;
+    }
+
+    public long getExecutionTimeNanos() {
+        return executionTimeNanos;
+    }
+
+    public void setExecutionTimeNanos(long executionTimeNanos) {
+        this.executionTimeNanos = executionTimeNanos;
+    }
+
+    public long getMemoryUsedBytes() {
+        return memoryUsedBytes;
+    }
+
+    public void setMemoryUsedBytes(long memoryUsedBytes) {
+        this.memoryUsedBytes = memoryUsedBytes;
+    }
+
+    public static class Builder {
+        private List<Integer> tourSequence;
+        private double totalDistance;
+        private int problemSize;
+        private long executionTimeNanos;
+        private long memoryUsedBytes;
+
+        public Builder tourSequence(List<Integer> tourSequence) {
+            this.tourSequence = tourSequence;
+            return this;
+        }
+
+        public Builder totalDistance(double totalDistance) {
+            this.totalDistance = totalDistance;
+            return this;
+        }
+
+        public Builder problemSize(int problemSize) {
+            this.problemSize = problemSize;
+            return this;
+        }
+
+        public Builder executionTimeNanos(long executionTimeNanos) {
+            this.executionTimeNanos = executionTimeNanos;
+            return this;
+        }
+
+        public Builder memoryUsedBytes(long memoryUsedBytes) {
+            this.memoryUsedBytes = memoryUsedBytes;
+            return this;
+        }
+
+        public TourResult build() {
+            return new TourResult(tourSequence, totalDistance, problemSize, executionTimeNanos, memoryUsedBytes);
+        }
+    }
 }

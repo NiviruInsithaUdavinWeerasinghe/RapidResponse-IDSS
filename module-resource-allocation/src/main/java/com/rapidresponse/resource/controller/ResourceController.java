@@ -6,9 +6,9 @@ import com.rapidresponse.resource.dto.request.ReliefItemRequest;
 import com.rapidresponse.resource.dto.response.*;
 import com.rapidresponse.resource.service.ResourceService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,11 +17,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/resources")
-@RequiredArgsConstructor
 @Tag(name = "Resource Allocation", description = "Helicopter relief-item packing (0-1 knapsack)")
 public class ResourceController {
 
     private final ResourceService resourceService;
+
+    public ResourceController(ResourceService resourceService) {
+        this.resourceService = resourceService;
+    }
 
     @Operation(summary = "Run Branch & Bound (exact) packing for a helicopter")
     @PostMapping("/allocate/exact")

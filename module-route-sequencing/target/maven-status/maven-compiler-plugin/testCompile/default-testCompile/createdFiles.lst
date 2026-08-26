@@ -1,0 +1,5 @@
+com\rapidresponse\sequencing\algorithm\TwoOptLocalSearchTest.class
+com\rapidresponse\sequencing\controller\RouteSequencingControllerTest.class
+com\rapidresponse\sequencing\service\RouteSequencingServiceTest.class
+com\rapidresponse\sequencing\service\DistanceMatrixBuilderTest.class
+com\rapidresponse\sequencing\algorithm\HeldKarpTSPTest.class

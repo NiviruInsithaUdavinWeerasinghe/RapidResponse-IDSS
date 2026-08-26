@@ -1,0 +1,16 @@
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\service\ResourceService.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\dto\response\AllocationResultResponse.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\dto\request\AllocationRequest.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\repository\ReliefItemRepository.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\entity\ReliefCategory.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\repository\HelicopterRepository.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\controller\ResourceController.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\model\ReliefItem.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\dto\response\AllocationCompareResponse.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\entity\HelicopterEntity.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\mapper\ReliefItemMapper.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\config\SolverConfig.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\dto\response\ReliefItemResponse.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\dto\response\HelicopterResponse.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\entity\ReliefItemEntity.java
+C:\Users\ASUS\Downloads\RapidResponse-IDSS\RapidResponse-IDSS\RapidResponse-IDSS\module-resource-allocation\src\main\java\com\rapidresponse\resource\dto\request\ReliefItemRequest.java

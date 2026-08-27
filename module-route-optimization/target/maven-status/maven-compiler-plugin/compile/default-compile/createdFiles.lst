@@ -1,3 +1,4 @@
+com\rapidresponse\route\algorithm\PathResult.class
 com\rapidresponse\route\service\RouteService.class
 com\rapidresponse\route\algorithm\AStarPathfinder$NodeScore.class
 com\rapidresponse\route\dto\request\RouteRequest.class
@@ -5,11 +6,16 @@ com\rapidresponse\route\dto\response\NeighborResponse.class
 com\rapidresponse\route\dto\response\RouteResponse.class
 com\rapidresponse\route\algorithm\AStarPathfinder.class
 com\rapidresponse\route\algorithm\DijkstraPathfinder.class
+com\rapidresponse\route\ModuleRouteOptimizationApplication.class
+com\rapidresponse\route\algorithm\Graph.class
 com\rapidresponse\route\controller\RouteController.class
+com\rapidresponse\route\algorithm\Edge.class
 com\rapidresponse\route\dto\response\RouteCompareResponse.class
 com\rapidresponse\route\model\PathResult$Builder.class
 com\rapidresponse\route\model\PathResult.class
 com\rapidresponse\route\dto\response\NodeResponse.class
+com\rapidresponse\route\algorithm\Node.class
 com\rapidresponse\route\algorithm\PathReconstruction.class
 com\rapidresponse\route\algorithm\DijkstraPathfinder$NodeDistance.class
+com\rapidresponse\route\algorithm\HaversineHeuristic.class
 com\rapidresponse\route\model\GraphBuilder.class

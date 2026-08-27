@@ -1,3 +1,1 @@
-com\rapidresponse\route\algorithm\AStarPathfinderTest.class
-com\rapidresponse\route\ModuleRouteOptimizationApplicationTests.class
-com\rapidresponse\route\algorithm\DijkstraPathfinderTest.class
+com/rapidresponse/route/ModuleRouteOptimizationApplicationTests.class

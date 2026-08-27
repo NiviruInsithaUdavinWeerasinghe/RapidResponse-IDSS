@@ -1,0 +1,57 @@
+const BASE_URL = 'http://localhost:8080/api/v1';
+
+async function postRequest(endpoint, body) {
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`API error (${response.status}): ${errorText}`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Fetch failed for ${endpoint}:`, error);
+    throw error;
+  }
+}
+
+async function getRequest(endpoint) {
+  try {
+    const response = await fetch(`${BASE_URL}${endpoint}`);
+    if (!response.ok) {
+      throw new Error(`API error (${response.status})`);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error(`Fetch failed for ${endpoint}:`, error);
+    throw error;
+  }
+}
+
+export const api = {
+  // Module 1 (Route Optimization)
+  optimizeRoute: (body) => postRequest('/route/optimize/compare', body),
+
+  // Module 2 (Resource Allocation)
+  allocateResources: (body) => postRequest('/resources/allocate/compare', body),
+  listItems: () => getRequest('/resources/items'),
+  listHelicopters: () => getRequest('/resources/helicopters'),
+
+  // Module 3 (Network Analysis)
+  getMST: () => postRequest('/network/mst', {}),
+  getReachability: () => postRequest('/network/reachability', {}),
+  getComponents: () => postRequest('/network/components', {}),
+
+  // Module 4 (Intelligent Decision)
+  optimizeDecisions: (body) => postRequest('/decisions/optimize/compare', body),
+  listSOSRequests: () => getRequest('/decisions/sos-requests'),
+
+  // Module 5 (TSP Sequencing)
+  sequenceTour: (body) => postRequest('/sequencing/optimize/compare', body),
+  getDistanceMatrix: (body) => postRequest('/sequencing/distance-matrix', body),
+};

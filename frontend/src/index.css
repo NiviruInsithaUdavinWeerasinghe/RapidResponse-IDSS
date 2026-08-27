@@ -135,22 +135,60 @@ body {
 }
 
 @keyframes package-drop {
-  0% { transform: translateY(-80px); opacity: 0; }
+  0% { transform: translateY(-15px); opacity: 0; }
   100% { transform: translateY(0); opacity: 1; }
 }
 
 .animate-package-drop {
-  animation: package-drop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  animation: package-drop 0.15s ease-out forwards;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@keyframes package-throw {
+  0% { transform: translateX(0) rotate(0deg) translateZ(0); opacity: 1; }
+  100% { transform: translateX(100px) rotate(15deg) translateZ(0); opacity: 0; }
+}
+
+.animate-package-throw {
+  animation: package-throw 0.15s ease-in forwards;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
 
 @keyframes weight-shake {
-  0%, 100% { transform: translateY(0) rotate(0); }
-  25% { transform: translateY(3px) rotate(-1.5deg); }
-  75% { transform: translateY(1.5px) rotate(1.5deg); }
+  0%, 100% { transform: translateY(0) rotate(0) translateZ(0); }
+  25% { transform: translateY(3px) rotate(-1.5deg) translateZ(0); }
+  75% { transform: translateY(1.5px) rotate(1.5deg) translateZ(0); }
 }
 
 .animate-weight-shake {
   animation: weight-shake 0.35s ease-in-out;
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@keyframes toast-enter {
+  0% { transform: translateX(120%) translateZ(0); opacity: 0; }
+  100% { transform: translateX(0) translateZ(0); opacity: 1; }
+}
+
+@keyframes toast-exit {
+  0% { transform: translateX(0) translateZ(0); opacity: 1; }
+  100% { transform: translateX(120%) translateZ(0); opacity: 0; }
+}
+
+.animate-toast-in {
+  animation: toast-enter 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.animate-toast-out {
+  animation: toast-exit 0.15s ease-in forwards;
+  will-change: transform, opacity;
 }@keyframes tree-sway {
   0%, 100% { transform: rotate(-1.2deg); }
   50% { transform: rotate(1.2deg); }
@@ -197,6 +235,13 @@ body {
 
 .animate-rescue-lift {
   animation: rescue-lift 0.85s ease-in-out forwards;
+}
+
+/* Force GPU Hardware Acceleration on visual panels, grids, and particles */
+.grid-cell, .animate-spin-slow, .animate-bounce, .animate-arms-wave, .animate-wave-flow-slow, .animate-rescue-lift {
+  transform: translate3d(0, 0, 0);
+  will-change: transform;
+  backface-visibility: hidden;
 }
 
 

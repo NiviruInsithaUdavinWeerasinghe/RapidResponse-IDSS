@@ -20,7 +20,6 @@
         <dependency>
             <groupId>com.rapidresponse</groupId>
             <artifactId>module-shared-algorithms</artifactId>
-            <version>1.0.0</version>
         </dependency>
 
         <!-- Spring Boot Web -->
@@ -33,13 +32,6 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
-        </dependency>
-
-        <!-- Lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <!-- MapStruct -->
@@ -66,5 +58,17 @@
         </dependency>
 
     </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <annotationProcessorPaths combine.self="override" />
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>

@@ -22,7 +22,7 @@
         <!-- The version of Spring Boot we are using -->
         <spring-boot.version>3.2.5</spring-boot.version>
         <!-- Lombok version: Used to automatically write getters, setters, constructors -->
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.36</lombok.version>
         <!-- MapStruct version: Used to translate database objects to API data transfer objects -->
         <mapstruct.version>1.5.5.Final</mapstruct.version>
         <!-- SpringDoc Swagger UI version: Used to generate interactive API testing docs -->
@@ -33,6 +33,8 @@
 
     <!-- LIST OF SUB-FOLDERS (MODULES) IN THE PROJECT -->
     <modules>
+        <!-- Runnable Spring Boot host for local API testing -->
+        <module>core-application</module>
         <!-- Shared utility algorithms for knapsack bounds and subsets -->
         <module>module-shared-algorithms</module>
         <!-- Module 1: Dijkstra and A* pathfinders -->
@@ -45,8 +47,6 @@
         <module>module-intelligent-decision</module>
         <!-- Module 5: Held-Karp dynamic programming and 2-Opt TSP tour builders -->
         <module>module-route-sequencing</module>
-        <!-- Main execution bootstrap folder that starts the Spring Boot server -->
-        <module>core-application</module>
     </modules>
 
     <!-- GLOBAL LIBRARY MANAGER (Prevents version conflicts across modules) -->
@@ -124,6 +124,11 @@
     <build>
         <pluginManagement>
             <plugins>
+                <plugin>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-maven-plugin</artifactId>
+                    <version>${spring-boot.version}</version>
+                </plugin>
                 <!-- COMPILER CONFIGURATION (Sets up Lombok and MapStruct auto-code generation) -->
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>

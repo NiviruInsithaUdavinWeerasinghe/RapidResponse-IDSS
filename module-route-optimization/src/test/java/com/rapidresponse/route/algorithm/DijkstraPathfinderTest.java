@@ -1,112 +1,104 @@
 package com.rapidresponse.route.algorithm;
 
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.Test;
 
-public class DijkstraPathfinderTest {
+import com.rapidresponse.route.model.PathResult;
+import com.rapidresponse.shared.model.Graph;
+import com.rapidresponse.shared.model.Node;
+import com.rapidresponse.shared.model.NodeType;
 
-    private Graph graph;
-    private DijkstraPathfinder pathfinder;
+class DijkstraPathfinderTest {
 
-    @BeforeEach
-    void setUp() {
-        graph = new Graph();
-        pathfinder = new DijkstraPathfinder();
-    }
+    private final DijkstraPathfinder pathfinder = new DijkstraPathfinder();
 
     @Test
-    void testSingleEdgePath() {
-        graph.addNode(new Node(1L));
-        graph.addNode(new Node(2L));
-        graph.addEdge(1L, new Edge(2L, 5.0, 10.0, false));
+    void findsSingleEdgePathAndAccumulatesMetrics() {
+        Graph graph = graph(node(1L, "A"), node(2L, "B"));
+        graph.addEdge(1L, 2L, 4.5, 7.0);
 
         PathResult result = pathfinder.findShortestPath(graph, 1L, 2L);
 
-        assertFalse(result.getNodeSequence().isEmpty(), "Path should exist");
+        assertEquals(PathResult.STATUS_SUCCESS, result.getStatus());
         assertEquals(List.of(1L, 2L), result.getNodeSequence());
-        assertEquals(5.0, result.getTotalDistanceKm(), 0.001);
-        assertEquals(10.0, result.getTotalTravelTimeMins(), 0.001);
-        assertTrue(result.getNodesExplored() > 0);
+        assertEquals(4.5, result.getTotalDistanceKm());
+        assertEquals(7.0, result.getTotalTravelTimeMins());
+        assertEquals(2, result.getNodesExplored());
     }
 
     @Test
-    void testMultiHopPath() {
-        // 1 -> 2 -> 4 (dist = 10)
-        // 1 -> 3 -> 4 (dist = 8)
-        graph.addNode(new Node(1L));
-        graph.addNode(new Node(2L));
-        graph.addNode(new Node(3L));
-        graph.addNode(new Node(4L));
-
-        graph.addEdge(1L, new Edge(2L, 4.0, 4.0, false));
-        graph.addEdge(2L, new Edge(4L, 6.0, 6.0, false));
-        
-        graph.addEdge(1L, new Edge(3L, 5.0, 5.0, false));
-        graph.addEdge(3L, new Edge(4L, 3.0, 3.0, false));
-
-        PathResult result = pathfinder.findShortestPath(graph, 1L, 4L);
-
-        assertEquals(List.of(1L, 3L, 4L), result.getNodeSequence());
-        assertEquals(8.0, result.getTotalDistanceKm(), 0.001);
-        assertEquals(8.0, result.getTotalTravelTimeMins(), 0.001);
-    }
-
-    @Test
-    void testNoPathExists() {
-        graph.addNode(new Node(1L));
-        graph.addNode(new Node(2L));
-
-        PathResult result = pathfinder.findShortestPath(graph, 1L, 2L);
-
-        assertTrue(result.getNodeSequence().isEmpty(), "Path should not exist");
-        assertEquals(0.0, result.getTotalDistanceKm(), 0.001);
-    }
-
-    @Test
-    void testBlockedEdges() {
-        graph.addNode(new Node(1L));
-        graph.addNode(new Node(2L));
-        graph.addNode(new Node(3L));
-
-        // Direct path is blocked
-        graph.addEdge(1L, new Edge(3L, 2.0, 2.0, true));
-        // Alternate path
-        graph.addEdge(1L, new Edge(2L, 5.0, 5.0, false));
-        graph.addEdge(2L, new Edge(3L, 5.0, 5.0, false));
+    void findsMultiHopShortestPathInsteadOfDirectLongerEdge() {
+        Graph graph = graph(node(1L, "A"), node(2L, "B"), node(3L, "C"));
+        graph.addEdge(1L, 2L, 3.0, 5.0);
+        graph.addEdge(2L, 3L, 2.0, 4.0);
+        graph.addEdge(1L, 3L, 10.0, 1.0);
 
         PathResult result = pathfinder.findShortestPath(graph, 1L, 3L);
 
         assertEquals(List.of(1L, 2L, 3L), result.getNodeSequence());
-        assertEquals(10.0, result.getTotalDistanceKm(), 0.001);
-    }
-    
-    @Test
-    void testGraphWithCycles() {
-        graph.addNode(new Node(1L));
-        graph.addNode(new Node(2L));
-        graph.addNode(new Node(3L));
-        
-        graph.addEdge(1L, new Edge(2L, 1.0, 1.0, false));
-        graph.addEdge(2L, new Edge(3L, 1.0, 1.0, false));
-        graph.addEdge(3L, new Edge(1L, 1.0, 1.0, false)); // cycle
-        
-        PathResult result = pathfinder.findShortestPath(graph, 1L, 3L);
-        
-        assertEquals(List.of(1L, 2L, 3L), result.getNodeSequence());
-        assertEquals(2.0, result.getTotalDistanceKm(), 0.001);
+        assertEquals(5.0, result.getTotalDistanceKm());
+        assertEquals(9.0, result.getTotalTravelTimeMins());
     }
 
     @Test
-    void testPerformanceTiming() {
-        graph.addNode(new Node(1L));
-        graph.addNode(new Node(2L));
-        graph.addEdge(1L, new Edge(2L, 5.0, 5.0, false));
+    void ignoresBlockedEdgesAndReportsNoPathWhenTheyAreTheOnlyRoute() {
+        Graph graph = graph(node(1L, "A"), node(2L, "B"));
+        graph.addEdge(1L, 2L, 1.0, 1.0);
+        graph.getNeighbors(1L).get(0).setBlocked(true);
 
         PathResult result = pathfinder.findShortestPath(graph, 1L, 2L);
 
-        assertTrue(result.getExecutionTimeNanos() > 0, "Execution time should be greater than 0");
+        assertEquals(PathResult.STATUS_NO_PATH, result.getStatus());
+        assertTrue(result.getNodeSequence().isEmpty());
+        assertEquals(1, result.getNodesExplored());
+    }
+
+    @Test
+    void returnsNoPathForDisconnectedNodes() {
+        Graph graph = graph(node(1L, "A"), node(2L, "B"), node(3L, "C"));
+
+        PathResult result = pathfinder.findShortestPath(graph, 1L, 3L);
+
+        assertEquals(PathResult.STATUS_NO_PATH, result.getStatus());
+        assertTrue(result.getNodeSequence().isEmpty());
+    }
+
+    @Test
+    void returnsSelfPathWhenSourceEqualsTarget() {
+        Graph graph = graph(node(1L, "A"));
+
+        PathResult result = pathfinder.findShortestPath(graph, 1L, 1L);
+
+        assertEquals(List.of(1L), result.getNodeSequence());
+        assertEquals(0.0, result.getTotalDistanceKm());
+    }
+
+    @Test
+    void terminatesOnCyclesAndReturnsTheShortestPath() {
+        Graph graph = graph(node(1L, "A"), node(2L, "B"), node(3L, "C"));
+        graph.addUndirectedEdge(1L, 2L, 1.0, 1.0);
+        graph.addUndirectedEdge(2L, 3L, 2.0, 2.0);
+
+        PathResult result = pathfinder.findShortestPath(graph, 1L, 3L);
+
+        assertEquals(List.of(1L, 2L, 3L), result.getNodeSequence());
+        assertEquals(3.0, result.getTotalDistanceKm());
+        assertTrue(result.getExecutionTimeNanos() > 0);
+    }
+
+    private static Graph graph(Node... nodes) {
+        Graph graph = new Graph();
+        for (Node node : nodes) {
+            graph.addNode(node);
+        }
+        return graph;
+    }
+
+    private static Node node(Long id, String name) {
+        return new Node(id, name, 0.0, 0.0, NodeType.INTERSECTION);
     }
 }

@@ -1,102 +1,101 @@
 package com.rapidresponse.route.algorithm;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
 
+import org.springframework.stereotype.Component;
+
+import com.rapidresponse.route.model.PathResult;
+import com.rapidresponse.shared.model.Edge;
+import com.rapidresponse.shared.model.Graph;
+
+/**
+ * Dijkstra shortest-path finder using a binary min-heap.
+ * Time complexity: O((V + E) log V).
+ */
+
+@Component
 public class DijkstraPathfinder {
 
-    private static class QueueNode implements Comparable<QueueNode> {
-        Long id;
-        double distance;
-
-        public QueueNode(Long id, double distance) {
-            this.id = id;
-            this.distance = distance;
-        }
-
-        @Override
-        public int compareTo(QueueNode other) {
-            return Double.compare(this.distance, other.distance);
-        }
-    }
-
     public PathResult findShortestPath(Graph graph, Long sourceId, Long targetId) {
-        long startTime = System.nanoTime();
-        
-        Map<Long, Double> distances = new HashMap<>();
-        Map<Long, Long> parent = new HashMap<>();
-        Map<Long, Double> travelTimes = new HashMap<>();
-        PriorityQueue<QueueNode> minHeap = new PriorityQueue<>();
-
-        // Initialize distances for all nodes in the graph
-        for (Long nodeId : graph.getNodes().keySet()) {
-            distances.put(nodeId, Double.POSITIVE_INFINITY);
-            travelTimes.put(nodeId, Double.POSITIVE_INFINITY);
+        if (sourceId == null || targetId == null) {
+            throw new IllegalArgumentException("Source and target IDs must not be null.");
         }
-        
-        // Also support nodes that might only be in adjacency lists or just the source directly
+        if (graph.getNode(sourceId) == null) {
+            throw new IllegalArgumentException("Source node not found: " + sourceId);
+        }
+        if (graph.getNode(targetId) == null) {
+            throw new IllegalArgumentException("Target node not found: " + targetId);
+        }
+
+        long startTimeNanos = System.nanoTime();
+
+        if (sourceId.equals(targetId)) {
+            return PathResult.success(
+                    java.util.List.of(sourceId),
+                    0.0,
+                    0.0,
+                    1,
+                    System.nanoTime() - startTimeNanos
+            );
+        }
+
+        Map<Long, Double> distances = new HashMap<>();
+        Map<Long, Double> travelTimes = new HashMap<>();
+        Map<Long, Long> parentMap = new HashMap<>();
+
+        for (Long nodeId : graph.getAllNodeIds()) {
+            distances.put(nodeId, Double.POSITIVE_INFINITY);
+            travelTimes.put(nodeId, 0.0);
+        }
         distances.put(sourceId, 0.0);
-        travelTimes.put(sourceId, 0.0);
-        
-        minHeap.add(new QueueNode(sourceId, 0.0));
+
+        PriorityQueue<NodeDistance> minHeap = new PriorityQueue<>(Comparator.comparingDouble(pair -> pair.distance));
+        minHeap.add(new NodeDistance(sourceId, 0.0));
+
         int nodesExplored = 0;
 
-        boolean found = false;
-
         while (!minHeap.isEmpty()) {
-            QueueNode current = minHeap.poll();
+            NodeDistance current = minHeap.poll();
             nodesExplored++;
 
-            if (current.id.equals(targetId)) {
-                found = true;
-                break;
+            if (current.nodeId.equals(targetId)) {
+                return PathReconstruction.fromParents(
+                        targetId,
+                        parentMap,
+                        distances,
+                        travelTimes,
+                        nodesExplored,
+                        System.nanoTime() - startTimeNanos
+                );
             }
 
-            // Optimization: if we have found a shorter path already, skip
-            if (current.distance > distances.getOrDefault(current.id, Double.POSITIVE_INFINITY)) {
+            if (current.distance > distances.get(current.nodeId)) {
                 continue;
             }
 
-            for (Edge edge : graph.getEdges(current.id)) {
-                if (edge.isBlocked()) continue;
-                
+            for (Edge edge : graph.getNeighbors(current.nodeId)) {
+                if (edge.isBlocked()) {
+                    continue;
+                }
+
                 Long neighborId = edge.getTargetId();
-                double newDist = distances.get(current.id) + edge.getDistance();
-                
-                if (newDist < distances.getOrDefault(neighborId, Double.POSITIVE_INFINITY)) {
-                    distances.put(neighborId, newDist);
-                    travelTimes.put(neighborId, travelTimes.getOrDefault(current.id, 0.0) + edge.getTravelTime());
-                    parent.put(neighborId, current.id);
-                    minHeap.add(new QueueNode(neighborId, newDist));
+                double newDistance = current.distance + edge.getDistanceKm();
+
+                if (newDistance < distances.get(neighborId)) {
+                    distances.put(neighborId, newDistance);
+                    travelTimes.put(neighborId, travelTimes.get(current.nodeId) + edge.getTravelTimeMins());
+                    parentMap.put(neighborId, current.nodeId);
+                    minHeap.add(new NodeDistance(neighborId, newDistance));
                 }
             }
         }
 
-        List<Long> path = new ArrayList<>();
-        double totalDistance = 0.0;
-        double totalTravelTime = 0.0;
+        return PathResult.unreachable(nodesExplored, System.nanoTime() - startTimeNanos);
+    }
 
-        if (found) {
-            Long curr = targetId;
-            while (curr != null) {
-                path.add(curr);
-                curr = parent.get(curr);
-            }
-            Collections.reverse(path);
-            totalDistance = distances.get(targetId);
-            totalTravelTime = travelTimes.get(targetId);
-        }
-
-        long executionTime = System.nanoTime() - startTime;
-
-        if (!found) {
-            return PathResult.NO_PATH_FOUND;
-        }
-        
-        return new PathResult(path, totalDistance, totalTravelTime, nodesExplored, executionTime);
+    private record NodeDistance(Long nodeId, double distance) {
     }
 }

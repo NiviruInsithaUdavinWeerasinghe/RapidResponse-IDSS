@@ -10,14 +10,15 @@ import org.springframework.stereotype.Component;
 import com.rapidresponse.route.model.PathResult;
 import com.rapidresponse.shared.model.Edge;
 import com.rapidresponse.shared.model.Graph;
+import com.rapidresponse.shared.model.Node;
 
 /**
- * Dijkstra shortest-path finder using a binary min-heap.
- * Time complexity: O((V + E) log V).
+ * A* shortest-path finder using straight-line (haversine) distance as an admissible heuristic.
  */
-
 @Component
-public class DijkstraPathfinder {
+public class AStarPathfinder {
+
+    private static final double EARTH_RADIUS_KM = 6371.0;
 
     public PathResult findShortestPath(Graph graph, Long sourceId, Long targetId) {
         if (sourceId == null || targetId == null) {
@@ -42,37 +43,38 @@ public class DijkstraPathfinder {
             );
         }
 
-        Map<Long, Double> distances = new HashMap<>();
+        Node target = graph.getNode(targetId);
+        Map<Long, Double> gScore = new HashMap<>();
         Map<Long, Double> travelTimes = new HashMap<>();
         Map<Long, Long> parentMap = new HashMap<>();
 
         for (Long nodeId : graph.getAllNodeIds()) {
-            distances.put(nodeId, Double.POSITIVE_INFINITY);
+            gScore.put(nodeId, Double.POSITIVE_INFINITY);
             travelTimes.put(nodeId, 0.0);
         }
-        distances.put(sourceId, 0.0);
+        gScore.put(sourceId, 0.0);
 
-        PriorityQueue<NodeDistance> minHeap = new PriorityQueue<>(Comparator.comparingDouble(pair -> pair.distance));
-        minHeap.add(new NodeDistance(sourceId, 0.0));
+        PriorityQueue<NodeScore> openSet = new PriorityQueue<>(Comparator.comparingDouble(pair -> pair.fScore));
+        openSet.add(new NodeScore(sourceId, 0.0, heuristicKm(graph.getNode(sourceId), target)));
 
         int nodesExplored = 0;
 
-        while (!minHeap.isEmpty()) {
-            NodeDistance current = minHeap.poll();
+        while (!openSet.isEmpty()) {
+            NodeScore current = openSet.poll();
             nodesExplored++;
 
             if (current.nodeId.equals(targetId)) {
                 return PathReconstruction.fromParents(
                         targetId,
                         parentMap,
-                        distances,
+                        gScore,
                         travelTimes,
                         nodesExplored,
                         System.nanoTime() - startTimeNanos
                 );
             }
 
-            if (current.distance > distances.get(current.nodeId)) {
+            if (current.gScore > gScore.get(current.nodeId)) {
                 continue;
             }
 
@@ -82,13 +84,14 @@ public class DijkstraPathfinder {
                 }
 
                 Long neighborId = edge.getTargetId();
-                double newDistance = current.distance + edge.getDistanceKm();
+                double tentativeG = current.gScore + edge.getDistanceKm();
 
-                if (newDistance < distances.get(neighborId)) {
-                    distances.put(neighborId, newDistance);
+                if (tentativeG < gScore.get(neighborId)) {
+                    gScore.put(neighborId, tentativeG);
                     travelTimes.put(neighborId, travelTimes.get(current.nodeId) + edge.getTravelTimeMins());
                     parentMap.put(neighborId, current.nodeId);
-                    minHeap.add(new NodeDistance(neighborId, newDistance));
+                    double fScore = tentativeG + heuristicKm(graph.getNode(neighborId), target);
+                    openSet.add(new NodeScore(neighborId, tentativeG, fScore));
                 }
             }
         }
@@ -96,6 +99,16 @@ public class DijkstraPathfinder {
         return PathResult.unreachable(nodesExplored, System.nanoTime() - startTimeNanos);
     }
 
-    private record NodeDistance(Long nodeId, double distance) {
+    static double heuristicKm(Node from, Node to) {
+        double lat1 = Math.toRadians(from.getLatitude());
+        double lat2 = Math.toRadians(to.getLatitude());
+        double dLat = lat2 - lat1;
+        double dLon = Math.toRadians(to.getLongitude() - from.getLongitude());
+        double hav = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+                + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1.0, Math.sqrt(hav)));
+    }
+
+    private record NodeScore(Long nodeId, double gScore, double fScore) {
     }
 }

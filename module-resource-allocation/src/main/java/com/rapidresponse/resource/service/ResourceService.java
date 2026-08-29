@@ -13,13 +13,16 @@ import com.rapidresponse.resource.repository.ReliefItemRepository;
 import com.rapidresponse.shared.algorithm.BranchAndBoundSolver;
 import com.rapidresponse.shared.algorithm.GreedySubsetSolver;
 import com.rapidresponse.shared.algorithm.SubsetResult;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ResourceService {
 
     private final ReliefItemRepository reliefItemRepository;
@@ -27,18 +30,6 @@ public class ResourceService {
     private final ReliefItemMapper reliefItemMapper;
     private final BranchAndBoundSolver<ReliefItem> branchAndBoundSolver;
     private final GreedySubsetSolver<ReliefItem> greedySolver;
-
-    public ResourceService(ReliefItemRepository reliefItemRepository,
-                           HelicopterRepository helicopterRepository,
-                           ReliefItemMapper reliefItemMapper,
-                           BranchAndBoundSolver<ReliefItem> branchAndBoundSolver,
-                           GreedySubsetSolver<ReliefItem> greedySolver) {
-        this.reliefItemRepository = reliefItemRepository;
-        this.helicopterRepository = helicopterRepository;
-        this.reliefItemMapper = reliefItemMapper;
-        this.branchAndBoundSolver = branchAndBoundSolver;
-        this.greedySolver = greedySolver;
-    }
 
     public AllocationResultResponse allocateExact(AllocationRequest request) {
         HelicopterEntity helicopter = loadHelicopter(request.helicopterId());

@@ -7,6 +7,7 @@ import com.rapidresponse.shared.model.Node;
 import com.rapidresponse.shared.model.NodeType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -14,27 +15,19 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
 
 public class DistanceMatrixBuilderTest {
 
+    private DijkstraPathfinder pathfinder;
     private DistanceMatrixBuilder builder;
     private Graph graph;
-    private final java.util.Map<String, PathResult> mockResponses = new java.util.HashMap<>();
 
     @BeforeEach
     public void setUp() {
-        DijkstraPathfinder pathfinder = new DijkstraPathfinder() {
-            @Override
-            public PathResult findShortestPath(Graph graph, Long sourceId, Long targetId) {
-                String key = sourceId + "-" + targetId;
-                if (mockResponses.containsKey(key)) {
-                    return mockResponses.get(key);
-                }
-                return super.findShortestPath(graph, sourceId, targetId);
-            }
-        };
+        pathfinder = Mockito.mock(DijkstraPathfinder.class);
         builder = new DistanceMatrixBuilder(pathfinder);
-        mockResponses.clear();
         
         graph = new Graph();
         graph.addNode(new Node(1L, "HQ", 0.0, 0.0, NodeType.HQ));
@@ -79,12 +72,29 @@ public class DistanceMatrixBuilderTest {
 
     @Test
     public void testSuccessfulMatrixBuildingAndCaching() {
-        mockResponses.put("1-2", PathResult.builder().nodeSequence(Arrays.asList(1L, 2L)).totalDistanceKm(3.5).totalTravelTimeMins(5.0).build());
-        mockResponses.put("2-1", PathResult.builder().nodeSequence(Arrays.asList(2L, 1L)).totalDistanceKm(3.5).totalTravelTimeMins(5.0).build());
-        mockResponses.put("1-3", PathResult.builder().nodeSequence(Arrays.asList(1L, 3L)).totalDistanceKm(10.0).totalTravelTimeMins(12.0).build());
-        mockResponses.put("3-1", PathResult.builder().nodeSequence(Arrays.asList(3L, 1L)).totalDistanceKm(10.0).totalTravelTimeMins(12.0).build());
-        mockResponses.put("2-3", PathResult.builder().nodeSequence(Arrays.asList(2L, 3L)).totalDistanceKm(6.5).totalTravelTimeMins(8.0).build());
-        mockResponses.put("3-2", PathResult.builder().nodeSequence(Arrays.asList(3L, 2L)).totalDistanceKm(6.5).totalTravelTimeMins(8.0).build());
+        // Mock pathfinder response from 1 -> 2 (dist 3.5)
+        when(pathfinder.findShortestPath(eq(graph), eq(1L), eq(2L)))
+                .thenReturn(PathResult.builder().nodeSequence(Arrays.asList(1L, 2L)).totalDistanceKm(3.5).totalTravelTimeMins(5.0).build());
+        
+        // Mock pathfinder response from 2 -> 1 (dist 3.5)
+        when(pathfinder.findShortestPath(eq(graph), eq(2L), eq(1L)))
+                .thenReturn(PathResult.builder().nodeSequence(Arrays.asList(2L, 1L)).totalDistanceKm(3.5).totalTravelTimeMins(5.0).build());
+
+        // Mock pathfinder response from 1 -> 3 (dist 10.0)
+        when(pathfinder.findShortestPath(eq(graph), eq(1L), eq(3L)))
+                .thenReturn(PathResult.builder().nodeSequence(Arrays.asList(1L, 3L)).totalDistanceKm(10.0).totalTravelTimeMins(12.0).build());
+
+        // Mock pathfinder response from 3 -> 1 (dist 10.0)
+        when(pathfinder.findShortestPath(eq(graph), eq(3L), eq(1L)))
+                .thenReturn(PathResult.builder().nodeSequence(Arrays.asList(3L, 1L)).totalDistanceKm(10.0).totalTravelTimeMins(12.0).build());
+
+        // Mock pathfinder response from 2 -> 3 (dist 6.5)
+        when(pathfinder.findShortestPath(eq(graph), eq(2L), eq(3L)))
+                .thenReturn(PathResult.builder().nodeSequence(Arrays.asList(2L, 3L)).totalDistanceKm(6.5).totalTravelTimeMins(8.0).build());
+
+        // Mock pathfinder response from 3 -> 2 (dist 6.5)
+        when(pathfinder.findShortestPath(eq(graph), eq(3L), eq(2L)))
+                .thenReturn(PathResult.builder().nodeSequence(Arrays.asList(3L, 2L)).totalDistanceKm(6.5).totalTravelTimeMins(8.0).build());
 
         List<Long> stopNodeIds = Arrays.asList(1L, 2L, 3L);
         double[][] matrix = builder.buildMatrix(graph, stopNodeIds);
@@ -116,7 +126,9 @@ public class DistanceMatrixBuilderTest {
 
     @Test
     public void testDisconnectedNodeTargetUnreachable() {
-        mockResponses.put("1-2", PathResult.builder().nodeSequence(Collections.emptyList()).totalDistanceKm(Double.MAX_VALUE / 2).build());
+        // 1 to 2 is disconnected (returns null sequence or empty PathResult)
+        when(pathfinder.findShortestPath(eq(graph), eq(1L), eq(2L)))
+                .thenReturn(PathResult.builder().nodeSequence(Collections.emptyList()).totalDistanceKm(Double.MAX_VALUE / 2).build());
 
         List<Long> stopNodeIds = Arrays.asList(1L, 2L);
         double[][] matrix = builder.buildMatrix(graph, stopNodeIds);
@@ -129,4 +141,3 @@ public class DistanceMatrixBuilderTest {
         assertFalse(cache.containsKey("1-2"));
     }
 }
-

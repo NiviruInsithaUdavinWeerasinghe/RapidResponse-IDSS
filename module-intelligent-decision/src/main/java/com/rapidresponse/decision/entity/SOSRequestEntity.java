@@ -22,7 +22,7 @@ public class SOSRequestEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "camp_id", nullable = false)
+    @Column(name = "rescue_camp_id", nullable = false)
     private Long campId;
 
     @Column(name = "camp_name", nullable = false)
@@ -31,13 +31,13 @@ public class SOSRequestEntity {
     @Column(name = "injury_severity", nullable = false)
     private double injurySeverity; // 1.0 (mild) to 10.0 (critical)
 
-    @Column(name = "population", nullable = false)
+    @Column(name = "camp_population", nullable = false)
     private double population; // affected population
 
-    @Column(name = "supply_shortage", nullable = false)
+    @Column(name = "supply_shortage_level", nullable = false)
     private double supplyShortage; // 0.0% to 100.0%
 
-    @Column(name = "required_trucks", nullable = false)
+    @Column(name = "resource_cost", nullable = false)
     private double requiredTrucks; // required vehicles / capacity
 
     @Enumerated(EnumType.STRING)

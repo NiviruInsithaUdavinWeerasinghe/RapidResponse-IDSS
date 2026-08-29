@@ -76,18 +76,24 @@ public class RouteService {
 
     public List<NeighborResponse> listNeighbors(Long nodeId) {
         requireNode(nodeId);
-        Graph graph = loadGraph();
         List<NeighborResponse> neighbors = new ArrayList<>();
-        for (Edge edge : graph.getNeighbors(nodeId)) {
-            Node neighbor = graph.getNode(edge.getTargetId());
-            neighbors.add(new NeighborResponse(
-                    neighbor.getId(),
-                    neighbor.getName(),
-                    neighbor.getLatitude(),
-                    neighbor.getLongitude(),
-                    edge.getDistanceKm(),
-                    edge.getTravelTimeMins()
-            ));
+        List<EdgeEntity> edges = edgeRepository.findAll();
+        for (EdgeEntity edge : edges) {
+            if (edge.getSourceId().equals(nodeId) || edge.getTargetId().equals(nodeId)) {
+                Long targetId = edge.getSourceId().equals(nodeId) ? edge.getTargetId() : edge.getSourceId();
+                NodeEntity neighbor = nodeRepository.findById(targetId).orElse(null);
+                if (neighbor != null) {
+                    neighbors.add(new NeighborResponse(
+                            neighbor.getId(),
+                            neighbor.getName(),
+                            neighbor.getLatitude(),
+                            neighbor.getLongitude(),
+                            edge.getDistanceKm(),
+                            edge.getTravelTimeMins(),
+                            edge.isBlocked()
+                    ));
+                }
+            }
         }
         return neighbors;
     }

@@ -42,13 +42,51 @@ public class NetworkService {
     private UnionFind lastUnionFind;
     private Map<Long, Integer> lastNodeIdToIndex;
     private int lastComponentCount;
-
     public NetworkService(NodeRepository nodeRepository, EdgeRepository edgeRepository) {
         this.nodeRepository = nodeRepository;
         this.edgeRepository = edgeRepository;
         this.bfs = new BreadthFirstSearch();
         this.dfs = new DepthFirstSearch();
     }
+
+
+    /**
+     * Toggles the blocked state of a road between source and target in the database.
+     */
+    public void toggleEdgeBlock(Long sourceId, Long targetId) {
+        List<EdgeEntity> edges = edgeRepository.findAll();
+        for (EdgeEntity edge : edges) {
+            if ((edge.getSourceId().equals(sourceId) && edge.getTargetId().equals(targetId))
+                    || (!edge.isOneWay() && edge.getSourceId().equals(targetId) && edge.getTargetId().equals(sourceId))) {
+                edge.setBlocked(!edge.isBlocked());
+                edgeRepository.save(edge);
+            }
+        }
+        // Invalidate cached Union-Find to trigger fresh calculation on next connectivity check
+        this.lastUnionFind = null;
+    }
+
+    /**
+     * Resets all roads in the database to unblocked.
+     */
+    public void resetAllEdges() {
+        List<EdgeEntity> edges = edgeRepository.findAll();
+        for (EdgeEntity edge : edges) {
+            edge.setBlocked(false);
+            edgeRepository.save(edge);
+        }
+        // Invalidate cache
+        this.lastUnionFind = null;
+    }
+
+    /**
+     * Gets all edges directly from the database.
+     */
+    public List<EdgeEntity> getAllEdges() {
+        return edgeRepository.findAll();
+    }
+
+
 
     /**
      * Runs BFS from the first HQ node and returns which camps are reachable vs isolated.

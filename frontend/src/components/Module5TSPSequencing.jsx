@@ -456,13 +456,24 @@ export default function Module5TSPSequencing() {
           {/* High Performance Canvas Rain Effect */}
           <RainEffect density={50} />
 
-          {/* Drifting Clouds */}
+          {/* Drifting Clouds with Jagged Cartoon Lightning Strikes */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
-            <svg className="absolute w-24 h-12 animate-cloud-drift-slow top-2" viewBox="0 0 100 50">
+            {/* Cloud 1 (Slow + Lightning - Medium, Upper) */}
+            <svg className="absolute w-24 h-28 animate-cloud-drift-slow top-1" viewBox="0 0 100 120" style={{ animationDelay: '0s' }}>
               <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="0.5" opacity="0.08" />
+              <path d="M48,32 L40,58 L48,58 L35,88 L43,88 L25,115" fill="none" stroke="#E2E8F0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="animate-lightning-bolt" />
             </svg>
-            <svg className="absolute w-32 h-16 animate-cloud-drift-fast top-8" viewBox="0 0 100 50">
-              <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="0.5" opacity="0.06" />
+            {/* Cloud 2 (Fast - Large, Lower) */}
+            <svg className="absolute w-44 h-36 animate-cloud-drift-fast top-12" viewBox="0 0 100 120" style={{ animationDelay: '-15s' }}>
+              <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#cbd5e1" stroke="#94a3b8" stroke="none" opacity="0.05" />
+            </svg>
+            {/* Cloud 3 (Slow - Large, Upper) */}
+            <svg className="absolute w-40 h-36 animate-cloud-drift-slow top-5" viewBox="0 0 100 120" style={{ animationDelay: '-50s' }}>
+              <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="0.5" opacity="0.06" />
+            </svg>
+            {/* Cloud 4 (Fast - Small, Lower) */}
+            <svg className="absolute w-20 h-24 animate-cloud-drift-fast top-18" viewBox="0 0 100 120" style={{ animationDelay: '-35s' }}>
+              <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="0.5" opacity="0.07" />
             </svg>
           </div>
 

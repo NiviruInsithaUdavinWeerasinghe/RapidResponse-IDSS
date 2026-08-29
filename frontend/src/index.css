@@ -244,5 +244,23 @@ body {
   backface-visibility: hidden;
 }
 
+@keyframes lightning-bolt-strike {
+  0%, 95.5%, 98.2%, 100% {
+    opacity: 0;
+    stroke-dashoffset: 150;
+  }
+  96%, 97.8% {
+    opacity: 1;
+    stroke-dashoffset: 0;
+    filter: drop-shadow(0 0 4px #22d3ee) drop-shadow(0 0 10px #c084fc);
+  }
+}
+
+.animate-lightning-bolt {
+  stroke-dasharray: 150;
+  animation: lightning-bolt-strike 24s infinite;
+}
+
+
 
 

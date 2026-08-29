@@ -203,27 +203,29 @@ export default function Module1RouteOpt() {
   const getScaledCoordinates = (nodeId) => {
     const layout = {
       "1": { x: 100, y: 150 }, // Colombo HQ
-      "2": { x: 630, y: 290 }, // Galle Rescue Camp
-      "3": { x: 770, y: 290 }, // Matara Rescue Camp
-      "4": { x: 810, y: 200 }, // Hambantota Camp
-      "5": { x: 520, y: 220 }, // Ratnapura Junction
-      "6": { x: 90, y: 320 },  // Camp Echo
-      "7": { x: 195, y: 340 }, // Camp Foxtrot
-      "8": { x: 600, y: 340 }, // Camp Golf
-      "9": { x: 740, y: 340 }, // Camp Hotel
-      "10": { x: 550, y: 160 }, // Camp India
-      "11": { x: 380, y: 90 },  // Camp Juliet
-      "12": { x: 80, y: 60 },   // Camp Kilo
-      "13": { x: 230, y: 140 }, // Camp Lima
-      "14": { x: 170, y: 200 }, // Junction - Maharagama
-      "15": { x: 130, y: 250 }, // Junction - Piliyandala
-      "16": { x: 280, y: 280 }, // Junction - Bandaragama
-      "17": { x: 350, y: 320 }, // Junction - Dodangoda
-      "18": { x: 480, y: 330 }, // Junction - Welipenna
-      "19": { x: 190, y: 80 },  // Junction - Kadawatha
-      "20": { x: 230, y: 220 }  // Junction - Kottawa
+      "2": { x: 630, y: 210 }, // Galle Rescue Camp (A) -> Shifted up further
+      "3": { x: 770, y: 295 }, // Matara Rescue Camp (B) -> Shifted down
+      "4": { x: 810, y: 200 }, // Hambantota Camp (C)
+      "5": { x: 505, y: 215 }, // Ratnapura Junction (JA)
+      "6": { x: 90, y: 350 },  // Camp Echo (D)
+      "7": { x: 195, y: 360 }, // Camp Foxtrot (E)
+      "8": { x: 600, y: 355 }, // Camp Golf (F)
+      "9": { x: 740, y: 355 }, // Camp Hotel (G)
+      "10": { x: 550, y: 145 }, // Camp India (H)
+      "11": { x: 420, y: 60 },  // Camp Juliet (I) -> Shifted right & up
+      "12": { x: 80, y: 60 },   // Camp Kilo (J)
+      "13": { x: 230, y: 120 }, // Camp Lima (K)
+      "14": { x: 170, y: 150 }, // Junction - Maharagama (JB)
+      "15": { x: 130, y: 215 }, // Junction - Piliyandala (JC) -> Shifted down
+      "16": { x: 280, y: 285 }, // Junction - Bandaragama (JD)
+      "17": { x: 350, y: 345 }, // Junction - Dodangoda (JE)
+      "18": { x: 480, y: 385 }, // Junction - Welipenna (JF) -> Shifted down
+      "19": { x: 190, y: 75 },  // Junction - Kadawatha (JG)
+      "20": { x: 285, y: 135 }  // Junction - Kottawa (JH) -> Shifted only right
     };
-    return layout[nodeId.toString()] || { x: 425, y: 205 };
+    const coord = layout[nodeId.toString()] || { x: 425, y: 205 };
+    const stretchedY = 200 + (coord.y - 200) * 1.35 + 5;
+    return { x: coord.x, y: stretchedY };
   };
 
   const calculateRoute = async () => {
@@ -405,13 +407,24 @@ export default function Module1RouteOpt() {
           <div className="lg:col-span-2 flex flex-col justify-between p-4 bg-slate-950 border border-slate-850 rounded-xl overflow-hidden relative">
             <RainEffect density={35} />
 
-            {/* Drifting Clouds */}
+            {/* Drifting Clouds with Jagged Cartoon Lightning Strikes */}
             <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
-              <svg className="absolute w-24 h-12 animate-cloud-drift-slow top-2" viewBox="0 0 100 50">
+              {/* Cloud 1 (Slow + Lightning - Medium, Upper) */}
+              <svg className="absolute w-24 h-28 animate-cloud-drift-slow top-1" viewBox="0 0 100 120" style={{ animationDelay: '0s' }}>
                 <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="0.5" opacity="0.08" />
+                <path d="M48,32 L40,58 L48,58 L35,88 L43,88 L25,115" fill="none" stroke="#E2E8F0" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="animate-lightning-bolt" />
               </svg>
-              <svg className="absolute w-32 h-16 animate-cloud-drift-fast top-8" viewBox="0 0 100 50">
-                <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="0.5" opacity="0.06" />
+              {/* Cloud 2 (Fast - Large, Lower) */}
+              <svg className="absolute w-44 h-36 animate-cloud-drift-fast top-12" viewBox="0 0 100 120" style={{ animationDelay: '-15s' }}>
+                <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#cbd5e1" stroke="#94a3b8" stroke="none" opacity="0.05" />
+              </svg>
+              {/* Cloud 3 (Slow - Large, Upper) */}
+              <svg className="absolute w-40 h-36 animate-cloud-drift-slow top-5" viewBox="0 0 100 120" style={{ animationDelay: '-50s' }}>
+                <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="0.5" opacity="0.06" />
+              </svg>
+              {/* Cloud 4 (Fast - Small, Lower) */}
+              <svg className="absolute w-20 h-24 animate-cloud-drift-fast top-18" viewBox="0 0 100 120" style={{ animationDelay: '-35s' }}>
+                <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#cbd5e1" stroke="#94a3b8" stroke="none" opacity="0.07" />
               </svg>
             </div>
 
@@ -443,7 +456,7 @@ export default function Module1RouteOpt() {
 
             {/* SVG Map */}
             <div className="flex-1 bg-slate-900/40 rounded-lg relative overflow-hidden flex items-center justify-center">
-              <svg viewBox="0 0 850 370" className="w-full h-full z-10">
+              <svg viewBox="0 0 850 480" className="w-full h-full z-10">
                 {/* Outgoing connection lines */}
                 {edges.map((edge, idx) => {
                   const u = getScaledCoordinates(edge.sourceId);
@@ -455,9 +468,9 @@ export default function Module1RouteOpt() {
                         y1={u.y}
                         x2={v.x}
                         y2={v.y}
-                        stroke={edge.blocked ? "#EF4444" : "#1E293B"}
-                        strokeWidth={edge.blocked ? "2.5" : "3.5"}
-                        strokeDasharray={edge.blocked ? "2 3" : "4 4"}
+                        stroke={edge.blocked ? "#EF4444" : "#334155"}
+                        strokeWidth={edge.blocked ? "1.5" : "2"}
+                        strokeDasharray={edge.blocked ? "3,3" : "0"}
                         opacity={edge.blocked ? 0.7 : 1}
                       />
                     </g>
@@ -478,8 +491,8 @@ export default function Module1RouteOpt() {
                       x2={v.x}
                       y2={v.y}
                       stroke="#22D3EE"
-                      strokeWidth="5"
-                      className="transition-all duration-300 ease-in-out drop-shadow-[0_0_8px_rgba(34,211,238,0.7)]"
+                      strokeWidth="3"
+                      className="transition-all duration-300 ease-in-out drop-shadow-[0_0_3px_rgba(34,211,238,0.5)]"
                     />
                   );
                 })}
@@ -497,8 +510,8 @@ export default function Module1RouteOpt() {
                       x2={v.x}
                       y2={v.y}
                       stroke="#10B981"
-                      strokeWidth="5"
-                      className="transition-all duration-300 ease-in-out drop-shadow-[0_0_8px_rgba(16,185,129,0.7)]"
+                      strokeWidth="3"
+                      className="transition-all duration-300 ease-in-out drop-shadow-[0_0_3px_rgba(16,185,129,0.5)]"
                     />
                   );
                 })}
@@ -520,8 +533,8 @@ export default function Module1RouteOpt() {
                             x2={v.x}
                             y2={v.y}
                             stroke="#A855F7"
-                            strokeWidth="6"
-                            className="transition-all duration-300 ease-in-out opacity-85"
+                            strokeWidth="3"
+                            className="transition-all duration-300 ease-in-out drop-shadow-[0_0_3px_rgba(168,85,247,0.4)]"
                           />
                         );
                       })}
@@ -539,8 +552,8 @@ export default function Module1RouteOpt() {
                             x2={v.x}
                             y2={v.y}
                             stroke="#10B981"
-                            strokeWidth="3.5"
-                            className="transition-all duration-300 ease-in-out drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]"
+                            strokeWidth="2"
+                            className="transition-all duration-300 ease-in-out drop-shadow-[0_0_3px_rgba(16,185,129,0.5)]"
                           />
                         );
                       })}
@@ -696,135 +709,134 @@ export default function Module1RouteOpt() {
 
       {/* Control Panel */}
       {!loading && !error && (
-        <div className="flex flex-col gap-3 shrink-0">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center bg-slate-950 p-4 border border-slate-850 rounded-xl">
-            {/* Start Node Custom Dropdown */}
-            <div className="flex flex-col gap-1 relative" ref={startSelectRef}>
-              <label className="text-[10px] uppercase font-bold text-slate-450 tracking-wider">Start Location (Source)</label>
-              <button
-                onClick={() => !isRunning && setIsStartOpen(!isStartOpen)}
-                disabled={isRunning}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold flex items-center justify-between text-left text-slate-100 hover:border-slate-700 transition-colors focus:outline-none disabled:opacity-50"
-              >
-                <span className="flex items-center gap-2 truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                  {nodes.find(n => n.id.toString() === sourceId)?.name || 'Select Start'}
-                </span>
-                <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
-              </button>
-              {isStartOpen && (
-                <div className="absolute left-0 right-0 bottom-full mb-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto py-1">
-                  {nodes.map(n => (
-                    <div
-                      key={n.id}
-                      onClick={() => {
-                        if (n.id.toString() === targetId.toString()) {
-                          showToast("Start location cannot be the same as target location!");
-                          return;
-                        }
-                        setSourceId(n.id.toString());
-                        setIsStartOpen(false);
-                      }}
-                      className={`px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
-                        sourceId === n.id.toString()
-                          ? 'bg-sky-500/20 text-sky-400 font-bold'
-                          : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-                      }`}
-                    >
-                      {n.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-3 bg-slate-950 p-2.5 border border-slate-850 rounded-xl shrink-0 items-center">
+          {/* Start Node Custom Dropdown */}
+          <div className="flex flex-col gap-1 relative" ref={startSelectRef}>
+            <label className="text-[9px] uppercase font-bold text-slate-450 tracking-wider">Start (Source)</label>
+            <button
+              onClick={() => !isRunning && setIsStartOpen(!isStartOpen)}
+              disabled={isRunning}
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-semibold flex items-center justify-between text-left text-slate-100 hover:border-slate-700 transition-colors focus:outline-none disabled:opacity-50"
+            >
+              <span className="flex items-center gap-1.5 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                {nodes.find(n => n.id.toString() === sourceId)?.name || 'Select Start'}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            </button>
+            {isStartOpen && (
+              <div className="absolute left-0 right-0 bottom-full mb-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto py-1">
+                {nodes.map(n => (
+                  <div
+                    key={n.id}
+                    onClick={() => {
+                      if (n.id.toString() === targetId.toString()) {
+                        showToast("Start location cannot be the same as target location!");
+                        return;
+                      }
+                      setSourceId(n.id.toString());
+                      setIsStartOpen(false);
+                    }}
+                    className={`px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                      sourceId === n.id.toString()
+                        ? 'bg-sky-500/20 text-sky-400 font-bold'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                    }`}
+                  >
+                    {n.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-            {/* Target Node Custom Dropdown */}
-            <div className="flex flex-col gap-1 relative" ref={targetSelectRef}>
-              <label className="text-[10px] uppercase font-bold text-slate-450 tracking-wider">Target Location (Destination)</label>
-              <button
-                onClick={() => !isRunning && setIsTargetOpen(!isTargetOpen)}
-                disabled={isRunning}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold flex items-center justify-between text-left text-slate-100 hover:border-slate-700 transition-colors focus:outline-none disabled:opacity-50"
-              >
-                <span className="flex items-center gap-2 truncate">
-                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
-                  {nodes.find(n => n.id.toString() === targetId)?.name || 'Select Target'}
-                </span>
-                <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
-              </button>
-              {isTargetOpen && (
-                <div className="absolute left-0 right-0 bottom-full mb-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto py-1">
-                  {nodes.map(n => (
-                    <div
-                      key={n.id}
-                      onClick={() => {
-                        if (n.id.toString() === sourceId.toString()) {
-                          showToast("Target location cannot be the same as start location!");
-                          return;
-                        }
-                        setTargetId(n.id.toString());
-                        setIsTargetOpen(false);
-                      }}
-                      className={`px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
-                        targetId === n.id.toString()
-                          ? 'bg-sky-500/20 text-sky-400 font-bold'
-                          : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
-                      }`}
-                    >
-                      {n.name}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+          {/* Target Node Custom Dropdown */}
+          <div className="flex flex-col gap-1 relative" ref={targetSelectRef}>
+            <label className="text-[9px] uppercase font-bold text-slate-450 tracking-wider">Target (Destination)</label>
+            <button
+              onClick={() => !isRunning && setIsTargetOpen(!isTargetOpen)}
+              disabled={isRunning}
+              className="w-full bg-slate-900 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-semibold flex items-center justify-between text-left text-slate-100 hover:border-slate-700 transition-colors focus:outline-none disabled:opacity-50"
+            >
+              <span className="flex items-center gap-1.5 truncate">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                {nodes.find(n => n.id.toString() === targetId)?.name || 'Select Target'}
+              </span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+            </button>
+            {isTargetOpen && (
+              <div className="absolute left-0 right-0 bottom-full mb-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto py-1">
+                {nodes.map(n => (
+                  <div
+                    key={n.id}
+                    onClick={() => {
+                      if (n.id.toString() === sourceId.toString()) {
+                        showToast("Target location cannot be the same as start location!");
+                        return;
+                      }
+                      setTargetId(n.id.toString());
+                      setIsTargetOpen(false);
+                    }}
+                    className={`px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                      targetId === n.id.toString()
+                        ? 'bg-sky-500/20 text-sky-400 font-bold'
+                        : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                    }`}
+                  >
+                    {n.name}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
-            {/* Action buttons */}
-            <div className="flex gap-2 h-full items-end mt-2 md:mt-0">
-              <button
-                onClick={calculateRoute}
-                disabled={isRunning}
-                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-slate-950 font-bold py-2 px-4 rounded-xl transition-all shadow-lg text-xs"
-              >
-                <Play className="w-4 h-4 fill-slate-950" />
-                Optimize Route
-              </button>
-              
-              <button
-                onClick={handleReset}
-                disabled={isRunning}
-                className="bg-slate-850 hover:bg-slate-800 border border-slate-700 text-slate-200 p-2.5 rounded-xl transition-all"
-                title="Reset"
-              >
-                <RotateCcw className="w-4 h-4" />
-              </button>
+          {/* Action buttons */}
+          <div className="flex gap-1.5 h-full items-end pt-3">
+            <button
+              onClick={calculateRoute}
+              disabled={isRunning}
+              className="flex-1 flex items-center justify-center gap-1 bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-slate-950 font-bold py-1.5 px-3 rounded-xl transition-all shadow-lg text-[11px]"
+            >
+              <Play className="w-3.5 h-3.5 fill-slate-950" />
+              Optimize
+            </button>
+            
+            <button
+              onClick={handleReset}
+              disabled={isRunning}
+              className="bg-slate-850 hover:bg-slate-800 border border-slate-700 text-slate-200 p-2 rounded-xl transition-all"
+              title="Reset"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          {/* Optimal Distance */}
+          <div className="flex flex-col items-center justify-center p-2 bg-slate-900/60 rounded-xl border border-slate-900/30 text-center h-[46px]">
+            <div className="text-slate-500 font-bold text-[8.5px] uppercase tracking-wider">Optimal Distance</div>
+            <div className="text-emerald-400 font-extrabold text-xs mt-0.5">
+              {results ? `${results.dijkstra.pathResult.totalDistanceKm} Km` : '—'}
             </div>
           </div>
-          
-          {/* Compare Stats metrics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-950 p-3.5 border border-slate-850 rounded-xl text-center text-xs shrink-0">
-            <div className="border-r border-slate-850 last:border-r-0">
-              <div className="text-slate-500 font-bold text-[9px] uppercase">Optimal Distance</div>
-              <div className="text-emerald-400 font-extrabold text-sm mt-0.5">
-                {results ? `${results.dijkstra.pathResult.totalDistanceKm} Km` : '—'}
-              </div>
+
+          {/* Travel Time */}
+          <div className="flex flex-col items-center justify-center p-2 bg-slate-900/60 rounded-xl border border-slate-900/30 text-center h-[46px]">
+            <div className="text-slate-500 font-bold text-[8.5px] uppercase tracking-wider">Travel Time</div>
+            <div className="text-[#22D3EE] font-extrabold text-xs mt-0.5">
+              {results ? `${results.dijkstra.pathResult.totalTravelTimeMins} mins` : '—'}
             </div>
-            <div className="border-r border-slate-850 last:border-r-0">
-              <div className="text-slate-500 font-bold text-[9px] uppercase">Travel Time</div>
-              <div className="text-cyan-450 font-extrabold text-sm mt-0.5">
-                {results ? `${results.dijkstra.pathResult.totalTravelTimeMins} mins` : '—'}
-              </div>
-            </div>
-            <div className="border-r border-slate-850 last:border-r-0">
-              <div className="text-slate-500 font-bold text-[9px] uppercase">Dijkstra Explored</div>
-              <div className="text-amber-500 font-extrabold text-sm mt-0.5">
-                {results ? `${results.dijkstra.pathResult.nodesExplored} nodes` : '—'}
-              </div>
-            </div>
-            <div>
-              <div className="text-slate-500 font-bold text-[9px] uppercase">A* Explored</div>
-              <div className="text-sky-400 font-extrabold text-sm mt-0.5">
-                {results ? `${results.astar.pathResult.nodesExplored} nodes` : '—'}
-              </div>
+          </div>
+
+          {/* Explored Nodes Card (Dijkstra vs A*) */}
+          <div className="flex flex-col items-center justify-center p-1.5 bg-slate-900/60 rounded-xl border border-slate-900/30 text-center h-[46px]">
+            <div className="text-slate-500 font-bold text-[8px] uppercase tracking-wider">Explored Nodes</div>
+            <div className="flex justify-around w-full mt-0.5 text-[10px] font-semibold font-mono">
+              <span className="text-amber-500" title="Dijkstra Explored">
+                D: {results ? results.dijkstra.pathResult.nodesExplored : '—'}
+              </span>
+              <span className="text-sky-450" title="A* Explored">
+                A*: {results ? results.astar.pathResult.nodesExplored : '—'}
+              </span>
             </div>
           </div>
         </div>

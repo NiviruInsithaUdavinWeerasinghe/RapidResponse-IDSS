@@ -6,6 +6,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.springframework.web.bind.annotation.GetMapping;
+import java.util.List;
+import com.rapidresponse.shared.entity.EdgeEntity;
 import com.rapidresponse.network.dto.ComponentsResponse;
 import com.rapidresponse.network.dto.ConnectivityRequest;
 import com.rapidresponse.network.dto.ConnectivityResponse;
@@ -60,6 +63,38 @@ public class NetworkController {
     public ResponseEntity<MstResponse> computeMst() {
         return ResponseEntity.ok(networkService.computeMst());
     }
+
+    /**
+     * Toggle blocked state of a road between source and target in the database.
+     */
+    @PostMapping("/edges/toggle-block")
+    @Operation(summary = "Toggle blocked state of a road in the database", description = "Finds the road between source and target nodes and toggles its blocked status in the database.")
+    public ResponseEntity<?> toggleEdgeBlock(@RequestBody ConnectivityRequest request) {
+        networkService.toggleEdgeBlock(request.getSourceNodeId(), request.getTargetNodeId());
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Reset all roads to unblocked in the database.
+     */
+    @PostMapping("/edges/reset")
+    @Operation(summary = "Reset all roads to unblocked state", description = "Resets all road segments in the database to unblocked.")
+    public ResponseEntity<?> resetAllEdges() {
+        networkService.resetAllEdges();
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * Gets all edges/roads in the network from the database.
+     */
+    @GetMapping("/edges")
+    @Operation(summary = "Get all roads/edges in the network", description = "Fetches all road segments including source/target node IDs and blocked statuses directly from the database.")
+    @ApiResponse(responseCode = "200", description = "Successfully retrieved all edges")
+    public ResponseEntity<List<EdgeEntity>> getAllEdges() {
+        return ResponseEntity.ok(networkService.getAllEdges());
+    }
+
+
 
     /**
      * Use Union-Find to check if two nodes are connected (O(α(V)) after MST).

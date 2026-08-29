@@ -13,7 +13,8 @@ async function postRequest(endpoint, body) {
       const errorText = await response.text();
       throw new Error(`API error (${response.status}): ${errorText}`);
     }
-    return await response.json();
+    const text = await response.text();
+    return text ? JSON.parse(text) : {};
   } catch (error) {
     console.error(`Fetch failed for ${endpoint}:`, error);
     throw error;
@@ -26,7 +27,8 @@ async function getRequest(endpoint) {
     if (!response.ok) {
       throw new Error(`API error (${response.status})`);
     }
-    return await response.json();
+    const text = await response.text();
+    return text ? JSON.parse(text) : {};
   } catch (error) {
     console.error(`Fetch failed for ${endpoint}:`, error);
     throw error;
@@ -48,6 +50,9 @@ export const api = {
   getMST: () => postRequest('/network/mst', {}),
   getReachability: () => postRequest('/network/reachability', {}),
   getComponents: () => postRequest('/network/components', {}),
+  toggleEdgeBlock: (body) => postRequest('/network/edges/toggle-block', body),
+  resetEdges: () => postRequest('/network/edges/reset', {}),
+  listEdges: () => getRequest('/network/edges'),
 
   // Module 4 (Intelligent Decision)
   optimizeDecisions: (body) => postRequest('/decisions/optimize/compare', body),

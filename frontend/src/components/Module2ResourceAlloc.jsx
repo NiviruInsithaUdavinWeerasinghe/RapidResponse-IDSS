@@ -65,6 +65,9 @@ export default function Module2ResourceAlloc() {
     }
   }, [toast]);
 
+  const currentSelectionRef = useRef(currentSelection);
+  currentSelectionRef.current = currentSelection;
+
   useEffect(() => {
     const currentIds = new Set(currentSelection);
     setRenderedSelection(prev => {
@@ -89,10 +92,12 @@ export default function Module2ResourceAlloc() {
 
     const hasLeaving = renderedSelection.some(i => !currentIds.has(i.id) && !i.isLeaving);
     if (hasLeaving) {
-      const timer = setTimeout(() => {
-        setRenderedSelection(prev => prev.filter(i => currentIds.has(i.id)));
+      setTimeout(() => {
+        setRenderedSelection(prev => {
+          const latestIds = new Set(currentSelectionRef.current);
+          return prev.filter(i => latestIds.has(i.id) || !i.isLeaving);
+        });
       }, 150);
-      return () => clearTimeout(timer);
     }
   }, [currentSelection, orders]);
 

@@ -34,8 +34,10 @@ async function getRequest(endpoint) {
 }
 
 export const api = {
-  // Module 1 (Route Optimization)
-  optimizeRoute: (body) => postRequest('/route/optimize/compare', body),
+  optimizeRoute: (body) => postRequest('/routes/compare', body),
+  listRouteNodes: () => getRequest('/routes/nodes'),
+  runDijkstra: (body) => postRequest('/routes/dijkstra', body),
+  runAstar: (body) => postRequest('/routes/astar', body),
 
   // Module 2 (Resource Allocation)
   allocateResources: (body) => postRequest('/resources/allocate/compare', body),

@@ -6,6 +6,7 @@ public record NeighborResponse(
         double latitude,
         double longitude,
         double distanceKm,
-        double travelTimeMins
+        double travelTimeMins,
+        boolean blocked
 ) {
 }

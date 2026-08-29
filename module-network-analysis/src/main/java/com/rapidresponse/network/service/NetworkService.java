@@ -58,6 +58,15 @@ public class NetworkService {
 
         // Find the HQ node to start BFS from.
         Long hqNodeId = findHqNodeId(graph);
+        if (hqNodeId == null) {
+            return ReachabilityResponse.builder()
+                    .reachableCamps(new ArrayList<>())
+                    .isolatedCamps(new ArrayList<>())
+                    .totalReachable(0)
+                    .executionTimeNanos(0)
+                    .build();
+        }
+
         TraversalResult result = bfs.traverse(graph, hqNodeId);
 
         Set<Long> reachableIds = result.getVisitedNodeIds();
@@ -136,9 +145,18 @@ public class NetworkService {
         }
 
         int nodeCount = nodeEntities.size();
-        UnionFind uf = new UnionFind(nodeCount);
+        if (nodeCount == 0) {
+            this.lastUnionFind = null;
+            this.lastNodeIdToIndex = null;
+            this.lastComponentCount = 0;
+            return MstResponse.builder()
+                    .roadsToClear(new ArrayList<>())
+                    .totalCost(0.0)
+                    .componentsReduced("from 0 to 0")
+                    .build();
+        }
 
-        // First, union all nodes connected by unblocked edges.
+        UnionFind uf = new UnionFind(nodeCount);
         for (EdgeEntity edge : edgeEntities) {
             if (!edge.isBlocked()) {
                 int srcIdx = nodeIdToIndex.get(edge.getSourceId());
@@ -195,6 +213,10 @@ public class NetworkService {
     public ConnectivityResponse checkConnectivity(Long sourceNodeId, Long targetNodeId) {
         if (lastUnionFind == null || lastNodeIdToIndex == null) {
             computeMst();
+        }
+
+        if (lastNodeIdToIndex == null) {
+            throw new IllegalArgumentException("Network is empty. Cannot check connectivity.");
         }
 
         Integer srcIdx = lastNodeIdToIndex.get(sourceNodeId);
@@ -284,6 +306,6 @@ public class NetworkService {
                 return nodeId;
             }
         }
-        throw new IllegalStateException("No HQ node found in the network");
+        return null;
     }
 }

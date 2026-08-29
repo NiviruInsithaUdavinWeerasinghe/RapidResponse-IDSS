@@ -86,17 +86,15 @@ export default function Module2ResourceAlloc() {
         
       return [...updated, ...toAdd];
     });
-  }, [currentSelection, orders]);
 
-  useEffect(() => {
-    const leaving = renderedSelection.filter(i => i.isLeaving);
-    if (leaving.length > 0) {
+    const hasLeaving = renderedSelection.some(i => !currentIds.has(i.id) && !i.isLeaving);
+    if (hasLeaving) {
       const timer = setTimeout(() => {
-        setRenderedSelection(prev => prev.filter(i => !i.isLeaving));
+        setRenderedSelection(prev => prev.filter(i => currentIds.has(i.id)));
       }, 150);
       return () => clearTimeout(timer);
     }
-  }, [renderedSelection]);
+  }, [currentSelection, orders]);
 
   // Fetch items and helicopters on mount
   useEffect(() => {

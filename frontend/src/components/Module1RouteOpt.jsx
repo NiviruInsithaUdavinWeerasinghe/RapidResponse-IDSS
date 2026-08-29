@@ -1,34 +1,83 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Play, RotateCcw, Compass, Info } from 'lucide-react';
+import { Play, RotateCcw, Compass, Info, Activity, ShieldAlert, Award, ChevronDown } from 'lucide-react';
 import RainEffect from './RainEffect';
 import SurvivorVisual from './SurvivorVisual';
-
-const COLS = 20;
-const ROWS = 10;
-const START_NODE = { r: 2, c: 2 };
-const END_NODE = { r: 7, c: 17 };
+import { api } from '../utils/api';
 
 export default function Module1RouteOpt() {
-  const [grid, setGrid] = useState([]);
-  const [algorithm, setAlgorithm] = useState('dijkstra');
-  const [speed, setSpeed] = useState(50);
+  const [nodes, setNodes] = useState([]);
+  const [edges, setEdges] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [sourceId, setSourceId] = useState('');
+  const [targetId, setTargetId] = useState('');
+  const [algorithm, setAlgorithm] = useState('compare'); // 'dijkstra', 'astar', 'compare'
+  
   const [isRunning, setIsRunning] = useState(false);
-  const [visitedCount, setVisitedCount] = useState(0);
-  const [pathLength, setPathLength] = useState(0);
-  const [frontier, setFrontier] = useState([]);
-  const [visited, setVisited] = useState({});
+  const [results, setResults] = useState(null);
   const [path, setPath] = useState([]);
   const [boatIndex, setBoatIndex] = useState(-1);
   const [logs, setLogs] = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
   
-  const timerRef = useRef(null);
   const [toast, setToast] = useState(null);
   const [toastLeaving, setToastLeaving] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
   const [shouldRenderModal, setShouldRenderModal] = useState(false);
   const [modalAnimating, setModalAnimating] = useState(false);
+  const [mapSelectMode, setMapSelectMode] = useState(null); // 'start', 'target', or null
+
+  const [isStartOpen, setIsStartOpen] = useState(false);
+  const [isTargetOpen, setIsTargetOpen] = useState(false);
+  const startSelectRef = useRef(null);
+  const targetSelectRef = useRef(null);
+
+  const animationRef = useRef(null);
+
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (startSelectRef.current && !startSelectRef.current.contains(e.target)) {
+        setIsStartOpen(false);
+      }
+      if (targetSelectRef.current && !targetSelectRef.current.contains(e.target)) {
+        setIsTargetOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, []);
+
+  // Clear animation interval on unmount
+  useEffect(() => {
+    return () => {
+      if (animationRef.current) clearInterval(animationRef.current);
+    };
+  }, []);
+
+  // Update path dynamically when algorithm changes if results are present (without restarting animation)
+  useEffect(() => {
+    if (results) {
+      const activeResult = algorithm === 'astar' ? results.astar : results.dijkstra;
+      const sequence = activeResult.pathResult.nodeSequence || [];
+      setPath(sequence);
+    }
+  }, [algorithm, results]);
+
+  // Clear path results dynamically when selected dropdown locations change
+  useEffect(() => {
+    if (results) {
+      if (animationRef.current) clearInterval(animationRef.current);
+      setResults(null);
+      setPath([]);
+      setBoatIndex(-1);
+      setIsRunning(false);
+      setLogs([{ text: "Parameters changed. Click Optimize Route to update path.", detail: "Ready to run new search path comparison." }]);
+      setSelectedLog(null);
+    }
+  }, [sourceId, targetId]);
 
   useEffect(() => {
     if (isInfoModalOpen) {
@@ -42,195 +91,241 @@ export default function Module1RouteOpt() {
     }
   }, [isInfoModalOpen]);
 
-  const copyLogsToClipboard = () => {
-    if (logs.length === 0) return;
-    const text = logs.map((l, idx) => `[${idx + 1}] ${l.text}\nDetail: ${l.detail}`).join("\n\n");
-    navigator.clipboard.writeText(text).then(() => {
-      setToast("Logs copied successfully!");
-      setToastLeaving(false);
+  const showToast = (msg) => {
+    setToast(msg);
+    setToastLeaving(false);
+    setTimeout(() => {
+      setToastLeaving(true);
       setTimeout(() => {
-        setToastLeaving(true);
-        setTimeout(() => {
-          setToast(null);
-        }, 150);
-      }, 2000);
+        setToast(null);
+      }, 150);
+    }, 3000);
+  };
+
+  const getFilteredLogs = () => {
+    return logs.filter(log => {
+      if (algorithm === 'compare') return true;
+      if (algorithm === 'dijkstra') {
+        return !log.text.includes('[A* Heuristic]') && !log.text.includes('[Optimization Analysis]');
+      }
+      if (algorithm === 'astar') {
+        return !log.text.includes('[Dijkstra Search]') && !log.text.includes('[Optimization Analysis]');
+      }
+      return true;
     });
   };
 
+  const copyLogsToClipboard = () => {
+    const activeLogs = getFilteredLogs();
+    if (activeLogs.length === 0) return;
+    const text = activeLogs.map((l, idx) => `[${idx + 1}] ${l.text}\nDetail: ${l.detail}`).join("\n\n");
+    navigator.clipboard.writeText(text).then(() => {
+      showToast("Logs copied to clipboard!");
+    });
+  };
+
+  const handleNodeClick = (nodeId) => {
+    if (mapSelectMode === 'start') {
+      if (nodeId.toString() === targetId.toString()) {
+        showToast("Start location cannot be the same as target location!");
+        return;
+      }
+      setSourceId(nodeId.toString());
+      setMapSelectMode(null);
+      showToast(`Start location updated to Node ${nodeId}!`);
+    } else if (mapSelectMode === 'target') {
+      if (nodeId.toString() === sourceId.toString()) {
+        showToast("Target location cannot be the same as start location!");
+        return;
+      }
+      setTargetId(nodeId.toString());
+      setMapSelectMode(null);
+      showToast(`Target location updated to Node ${nodeId}!`);
+    }
+  };
+
+  // Load nodes and edges on mount
   useEffect(() => {
-    resetGrid();
+    fetchNetworkData();
   }, []);
 
-  const resetGrid = () => {
-    stopGridSim();
-    const newGrid = [];
-    for (let r = 0; r < ROWS; r++) {
-      const row = [];
-      for (let c = 0; c < COLS; c++) {
-        row.push({
-          r,
-          c,
-          isStart: r === START_NODE.r && c === START_NODE.c,
-          isEnd: r === END_NODE.r && c === END_NODE.c,
-          isWall: false,
-        });
+  const fetchNetworkData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const nodesData = await api.listRouteNodes();
+      setNodes(nodesData);
+
+      // Set default source and target if available
+      if (nodesData.length > 0) {
+        const hq = nodesData.find(n => n.nodeType === 'HQ') || nodesData[0];
+        const camp = nodesData.find(n => n.nodeType === 'RESCUE_CAMP') || nodesData[nodesData.length - 1];
+        setSourceId(hq.id.toString());
+        setTargetId(camp.id.toString());
       }
-      newGrid.push(row);
+
+      // Fetch edges for each node in parallel
+      const edgeList = [];
+      const edgeTracker = new Set();
+
+      await Promise.all(
+        nodesData.map(async (node) => {
+          try {
+            const neighbors = await fetch(`http://localhost:8080/api/v1/routes/nodes/${node.id}/neighbors`).then(res => res.json());
+            neighbors.forEach(n => {
+              const pairKey = [node.id, n.nodeId].sort().join('-');
+              if (!edgeTracker.has(pairKey)) {
+                edgeTracker.add(pairKey);
+                edgeList.push({
+                  sourceId: node.id,
+                  targetId: n.nodeId,
+                  distanceKm: n.distanceKm,
+                  travelTimeMins: n.travelTimeMins,
+                  blocked: n.blocked
+                });
+              }
+            });
+          } catch (e) {
+            console.error(`Failed to fetch neighbors for node ${node.id}`, e);
+          }
+        })
+      );
+      setEdges(edgeList);
+    } catch (err) {
+      console.error("Failed to load road network nodes", err);
+      setError("Failed to load road network from the backend database server.");
+    } finally {
+      setLoading(false);
     }
-    // Add default walls
-    for (let r = 1; r < 9; r++) {
-      if (r !== 5) newGrid[r][8].isWall = true;
-    }
-    for (let r = 0; r < 8; r++) {
-      if (r !== 3) newGrid[r][13].isWall = true;
-    }
-    setGrid(newGrid);
-    setVisited({});
-    setFrontier([]);
-    setPath([]);
-    setBoatIndex(-1);
-    setVisitedCount(0);
-    setPathLength(0);
-    setLogs([{ text: "System is ready. Press Start.", detail: "Workspace initialized.\nSelect Dijkstra for standard uniform search or A* for goal-directed heuristic pathing to the rescue camp." }]);
-    setSelectedLog(null);
   };
 
-  const stopGridSim = () => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
+  // Translate Node Latitude/Longitude to Responsive SVG screen space
+  const getScaledCoordinates = (nodeId) => {
+    const layout = {
+      "1": { x: 100, y: 150 }, // Colombo HQ
+      "2": { x: 630, y: 290 }, // Galle Rescue Camp
+      "3": { x: 770, y: 290 }, // Matara Rescue Camp
+      "4": { x: 810, y: 200 }, // Hambantota Camp
+      "5": { x: 520, y: 220 }, // Ratnapura Junction
+      "6": { x: 90, y: 320 },  // Camp Echo
+      "7": { x: 195, y: 340 }, // Camp Foxtrot
+      "8": { x: 600, y: 340 }, // Camp Golf
+      "9": { x: 740, y: 340 }, // Camp Hotel
+      "10": { x: 550, y: 160 }, // Camp India
+      "11": { x: 380, y: 90 },  // Camp Juliet
+      "12": { x: 80, y: 60 },   // Camp Kilo
+      "13": { x: 230, y: 140 }, // Camp Lima
+      "14": { x: 170, y: 200 }, // Junction - Maharagama
+      "15": { x: 130, y: 250 }, // Junction - Piliyandala
+      "16": { x: 280, y: 280 }, // Junction - Bandaragama
+      "17": { x: 350, y: 320 }, // Junction - Dodangoda
+      "18": { x: 480, y: 330 }, // Junction - Welipenna
+      "19": { x: 190, y: 80 },  // Junction - Kadawatha
+      "20": { x: 230, y: 220 }  // Junction - Kottawa
+    };
+    return layout[nodeId.toString()] || { x: 425, y: 205 };
+  };
+
+  const calculateRoute = async () => {
+    if (!sourceId || !targetId) {
+      showToast("Please select both source and target camps!");
+      return;
     }
-    setIsRunning(false);
-  };
-
-  const toggleWall = (r, c) => {
-    if (isRunning) return;
-    if ((r === START_NODE.r && c === START_NODE.c) || (r === END_NODE.r && c === END_NODE.c)) return;
-    const newGrid = [...grid];
-    newGrid[r][c].isWall = !newGrid[r][c].isWall;
-    setGrid(newGrid);
-  };
-
-  const startPathfinding = () => {
-    if (isRunning) {
-      stopGridSim();
+    if (sourceId === targetId) {
+      showToast("Source and target locations must be different!");
       return;
     }
 
-    setVisited({});
-    setPath([]);
-    setBoatIndex(-1);
-    setVisitedCount(0);
-    setPathLength(0);
-    setLogs([{ text: `Starting pathfinding calculations...`, detail: `Executing graph traversal.\nAlgorithm: ${algorithm === 'astar' ? 'A* Search (Admissible Heuristic)' : "Dijkstra's SSSP"}.` }]);
+    if (animationRef.current) clearInterval(animationRef.current);
     setIsRunning(true);
+    setBoatIndex(-1);
+    setPath([]);
+    setResults(null);
 
-    const dist = {};
-    const prev = {};
-    const h = (node) => Math.abs(node.r - END_NODE.r) + Math.abs(node.c - END_NODE.c);
+    const startNodeName = nodes.find(n => n.id.toString() === sourceId)?.name || 'Source';
+    const endNodeName = nodes.find(n => n.id.toString() === targetId)?.name || 'Target';
 
-    for (let r = 0; r < ROWS; r++) {
-      for (let c = 0; c < COLS; c++) {
-        dist[`${r},${c}`] = Infinity;
+    setLogs([
+      {
+        text: `Initiating routing query from ${startNodeName} to ${endNodeName}...`,
+        detail: `[System Route Query]\n- Source Node ID: ${sourceId} (${startNodeName})\n- Target Node ID: ${targetId} (${endNodeName})\n- Executing backend optimization queries.`
       }
-    }
-    dist[`${START_NODE.r},${START_NODE.c}`] = 0;
+    ]);
 
-    let queue = [{ r: START_NODE.r, c: START_NODE.c, f: algorithm === 'astar' ? h(START_NODE) : 0, g: 0 }];
-    const localVisited = {};
-    let stepCount = 0;
+    try {
+      // Fetch optimization comparison data
+      const queryBody = { sourceId: parseInt(sourceId), targetId: parseInt(targetId) };
+      const data = await api.optimizeRoute(queryBody);
+      
+      // Update logs comparison detail
+      const newLogs = [];
+      newLogs.push({
+        text: `[Dijkstra Search] Shortest path computed in ${data.dijkstra.pathResult.executionTimeNanos / 1000} μs.`,
+        detail: `[Dijkstra Uniform Search Results]\n- Path Distance: ${data.dijkstra.pathResult.totalDistanceKm} Km\n- Est. Travel Time: ${data.dijkstra.pathResult.totalTravelTimeMins} mins\n- Graph Nodes Traversed: ${data.dijkstra.pathResult.nodesExplored} nodes explored\n- Route Node Sequence: ${data.dijkstra.nodeNames.join(" → ")}`
+      });
+      newLogs.push({
+        text: `[A* Heuristic] Shortest path computed in ${data.astar.pathResult.executionTimeNanos / 1000} μs.`,
+        detail: `[A* Goal-Directed Heuristic Results]\n- Heuristic Mode: Geographic Haversine Distance\n- Path Distance: ${data.astar.pathResult.totalDistanceKm} Km\n- Est. Travel Time: ${data.astar.pathResult.totalTravelTimeMins} mins\n- Graph Nodes Traversed: ${data.astar.pathResult.nodesExplored} nodes explored\n- Route Node Sequence: ${data.astar.nodeNames.join(" → ")}`
+      });
+      const exploredDiff = data.dijkstra.pathResult.nodesExplored - data.astar.pathResult.nodesExplored;
+      newLogs.push({
+        text: `[Optimization Analysis] A* explored ${exploredDiff} fewer nodes than Dijkstra.`,
+        detail: `[Search Optimization Summary]\n- Nodes Explored Delta: A* reduced exploration tree by ${exploredDiff} nodes.\n- Optimal Path Equivalence: ${data.samePath ? "Confirmed (Both generated identical paths)" : "Alternative path found"}\n- Efficiency gain: ${exploredDiff > 0 ? `${Math.round((exploredDiff / data.dijkstra.pathResult.nodesExplored) * 100)}% reduction in queue workload.` : "Equal exploration node bounds."}`
+      });
 
-    timerRef.current = setInterval(() => {
-      if (queue.length === 0) {
-        stopGridSim();
-        setLogs(prevLogs => [...prevLogs, { text: "No path found between locations.", detail: "Open queue heap is empty. Target node is unreachable. Check wall obstacles." }]);
-        return;
-      }
+      setLogs(prev => [...prev, ...newLogs]);
+      setSelectedLog(newLogs[0]);
+      
+      const activeResult = algorithm === 'astar' ? data.astar : data.dijkstra;
+      const sequence = activeResult.pathResult.nodeSequence || [];
+      setPath(sequence);
+      setResults(data);
 
-      queue.sort((a, b) => a.f - b.f);
-      const curr = queue.shift();
-      const currKey = `${curr.r},${curr.c}`;
-
-      if (localVisited[currKey]) return;
-      localVisited[currKey] = true;
-      setVisited(prev => ({ ...prev, [currKey]: true }));
-      setVisitedCount(c => c + 1);
-      stepCount++;
-
-      // Log decision reasoning
-      if (stepCount % 5 === 1 || (curr.r === END_NODE.r && curr.c === END_NODE.c)) {
-        let entry;
-        if (algorithm === 'astar') {
-          const heur = h(curr);
-          entry = {
-            text: `Navigating node (${curr.r}, ${curr.c}) because it points towards the rescue camp.`,
-            detail: `[A* Search Step Details]\n- Current Node: (${curr.r}, ${curr.c})\n- Cumulative Path cost g(n): ${curr.g} blocks\n- Admissible Heuristic h(n): ${heur} blocks\n- Priority Value f(n) = g(n) + h(n) = ${curr.g + heur}\n- Decision: Prioritizing nodes with smaller f(n) to direct exploration toward rescue camp coordinates.`
-          };
-        } else {
-          entry = {
-            text: `Checking node (${curr.r}, ${curr.c}) uniformly.`,
-            detail: `[Dijkstra Search Step Details]\n- Current Node: (${curr.r}, ${curr.c})\n- Tentative path distance g(n): ${curr.g}\n- Decision: Exploring all adjacent nodes uniformly in circular wave. No heuristic coordinates applied.`
-          };
-        }
-        setLogs(prevLogs => [...prevLogs, entry]);
-        setSelectedLog(entry);
-      }
-
-      if (curr.r === END_NODE.r && curr.c === END_NODE.c) {
-        stopGridSim();
-        const reconstructedPath = [];
-        let temp = currKey;
-        while (temp) {
-          const [tr, tc] = temp.split(',').map(Number);
-          reconstructedPath.unshift({ r: tr, c: tc });
-          temp = prev[temp];
-        }
-        setPath(reconstructedPath);
-        setPathLength(reconstructedPath.length);
-        
-        // Animate boat along path
-        let bIdx = 0;
-        const boatInterval = setInterval(() => {
-          setBoatIndex(bIdx);
-          if (bIdx >= reconstructedPath.length - 1) {
-            clearInterval(boatInterval);
+      if (sequence.length > 0) {
+        let idx = 0;
+        setBoatIndex(0);
+        setIsRunning(true);
+        animationRef.current = setInterval(() => {
+          setBoatIndex(idx);
+          if (idx >= sequence.length - 1) {
+            clearInterval(animationRef.current);
+            setIsRunning(false);
+            setTimeout(() => {
+              setBoatIndex(-1);
+            }, 600);
           } else {
-            bIdx++;
+            idx++;
           }
-        }, 150);
-
-        const endLog = { text: "Shortest route successfully calculated.", detail: `[Route Search Finished]\n- Path length: ${reconstructedPath.length} blocks\n- Total vertices traversed: ${stepCount}\n- Prev mapping reconstructed back to Central HQ.` };
-        setLogs(prevLogs => [...prevLogs, endLog]);
-        setSelectedLog(endLog);
-        return;
+        }, 500);
       }
 
-      const neighbors = [
-        { r: curr.r - 1, c: curr.c },
-        { r: curr.r + 1, c: curr.c },
-        { r: curr.r, c: curr.c - 1 },
-        { r: curr.r, c: curr.c + 1 },
-      ];
-
-      for (const n of neighbors) {
-        if (n.r >= 0 && n.r < ROWS && n.c >= 0 && n.c < COLS) {
-          if (grid[n.r][n.c].isWall || localVisited[`${n.r},${n.c}`]) continue;
-          const newG = curr.g + 1;
-          const nKey = `${n.r},${n.c}`;
-          if (newG < dist[nKey]) {
-            dist[nKey] = newG;
-            prev[nKey] = currKey;
-            queue.push({ r: n.r, c: n.c, f: newG + (algorithm === 'astar' ? h(n) : 0), g: newG });
-          }
+    } catch (err) {
+      console.error(err);
+      setLogs(prev => [
+        ...prev,
+        {
+          text: "API error. Node query failed.",
+          detail: `Backend controller returned error state:\n${err.message}`
         }
-      }
-      setFrontier([...queue]);
-    }, speed);
+      ]);
+      setIsRunning(false);
+    }
   };
 
-  useEffect(() => {
-    return () => stopGridSim();
-  }, []);
+  const handleReset = () => {
+    if (animationRef.current) clearInterval(animationRef.current);
+    setIsRunning(false);
+    setResults(null);
+    setPath([]);
+    setBoatIndex(-1);
+    setLogs([{ text: "System reset to standby.", detail: "Choose start and destination camps to calculate the optimized route." }]);
+    setSelectedLog(null);
+  };
+
+  const filteredLogs = getFilteredLogs();
+
+  const dijkstraPath = results ? (results.dijkstra.pathResult.nodeSequence || []) : [];
+  const astarPath = results ? (results.astar.pathResult.nodeSequence || []) : [];
 
   return (
     <div className="flex flex-col h-[calc(100vh-140px)] bg-slate-900 border border-slate-800 rounded-2xl p-6 text-slate-100 shadow-xl overflow-hidden relative">
@@ -267,241 +362,473 @@ export default function Module1RouteOpt() {
         {/* Toggle Algorithm */}
         <div className="flex bg-slate-850 p-1 border border-slate-700 rounded-xl">
           <button
-            onClick={() => { setAlgorithm('dijkstra'); resetGrid(); }}
+            onClick={() => setAlgorithm('compare')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              algorithm === 'compare' ? 'bg-sky-600 text-slate-100 font-bold shadow' : 'text-slate-400 hover:text-slate-100'
+            }`}
+          >
+            Compare Both
+          </button>
+          <button
+            onClick={() => setAlgorithm('dijkstra')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               algorithm === 'dijkstra' ? 'bg-sky-600 text-slate-100 font-bold shadow' : 'text-slate-400 hover:text-slate-100'
             }`}
           >
-            Dijkstra's Algorithm
+            Dijkstra Only
           </button>
           <button
-            onClick={() => { setAlgorithm('astar'); resetGrid(); }}
+            onClick={() => setAlgorithm('astar')}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               algorithm === 'astar' ? 'bg-sky-600 text-slate-100 font-bold shadow' : 'text-slate-400 hover:text-slate-100'
             }`}
           >
-            A* Search (Heuristic)
+            A* Heuristic Only
           </button>
         </div>
       </div>
 
-      {/* Main Content Layout with Grid and Logs side by side */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 my-4 overflow-hidden">
-        {/* Grid Canvas */}
-        <div className="lg:col-span-2 flex flex-col justify-between p-4 bg-slate-950 border border-slate-850 rounded-xl overflow-auto relative">
-          {/* High Performance Canvas Rain particle background */}
-          <RainEffect density={60} />
-
-          {/* Drifting Clouds */}
-          <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
-            <svg className="absolute w-24 h-12 animate-cloud-drift-slow top-2" viewBox="0 0 100 50">
-              <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="0.5" opacity="0.08" />
-            </svg>
-            <svg className="absolute w-32 h-16 animate-cloud-drift-fast top-8" viewBox="0 0 100 50">
-              <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="0.5" opacity="0.06" />
-            </svg>
-          </div>
-
-          <div className="flex items-center gap-4 text-[10px] text-slate-400 bg-slate-900/80 p-2.5 rounded-lg border border-slate-850 mb-3 shrink-0 z-10">
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-emerald-500"></span> HQ</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-rose-500"></span> Target Camp</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-blue-950 border border-blue-800 text-blue-300 font-bold flex items-center justify-center text-[7px] w-4 h-4">≋</span> Flood Zone</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-sky-900"></span> Explored</span>
-            <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded bg-cyan-400"></span> Safe Route</span>
-          </div>
-
-          <div className="flex-grow flex items-center justify-center z-10 relative">
-            
-            {/* Smooth sliding & pitching SVG boat overlay container */}
-            {path.length > 0 && boatIndex >= 0 && boatIndex < path.length && (() => {
-              let scaleX = 1; // Default facing right (scaleX = 1)
-              if (boatIndex > 0 && path[boatIndex] && path[boatIndex - 1]) {
-                // Find the last horizontal movement direction in the traversed path
-                let lastDc = 0;
-                for (let i = boatIndex; i > 0; i--) {
-                  const diff = path[i].c - path[i-1].c;
-                  if (diff !== 0) {
-                    lastDc = diff;
-                    break;
-                  }
-                }
-                if (lastDc < 0) scaleX = -1; // Mirror horizontally to face left
-                else scaleX = 1;             // Face right
-              }
-              return (
-                <div
-                  className="absolute z-20 flex items-center justify-center pointer-events-none"
-                  style={{
-                    left: `${(path[boatIndex].c / COLS) * 100}%`,
-                    top: `${(path[boatIndex].r / ROWS) * 100}%`,
-                    width: `${100 / COLS}%`,
-                    height: `${100 / ROWS}%`,
-                    transition: 'left 150ms cubic-bezier(0.4, 0, 0.2, 1), top 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-                  }}
-                >
-                  <div className="animate-boat-pitch">
-                    <svg 
-                      className="w-7 h-7 text-cyan-300 fill-current drop-shadow-[0_0_8px_rgba(34,211,238,0.85)] overflow-visible" 
-                      viewBox="0 0 24 24"
-                      style={{ transform: `scaleX(${scaleX})`, transition: 'transform 120ms ease-in-out' }}
-                    >
-                      {/* Ancient sailboat hull */}
-                      <path d="M3 15 L21 15 L17 19 H7 Z" fill="#0284c7" stroke="#22d3ee" strokeWidth="1" />
-                      {/* Mast */}
-                      <line x1="12" y1="15" x2="12" y2="3.5" stroke="#f8fafc" strokeWidth="1.5" strokeLinecap="round" />
-                      {/* Left Sail (Mainsail) */}
-                      <path d="M11 4.5 L4.5 14 H11 Z" fill="#f8fafc" fillOpacity="0.9" stroke="#22d3ee" strokeWidth="0.5" />
-                      {/* Right Sail (Jib) */}
-                      <path d="M13 5.5 L19.5 14 H13 Z" fill="#f8fafc" fillOpacity="0.8" stroke="#22d3ee" strokeWidth="0.5" />
-                      {/* Little flag on top */}
-                      <path d="M12 3.5 L15.5 4.5 L12 5.5" fill="#f97316" />
-                    </svg>
-                  </div>
-                </div>
-              );
-            })()}
-
-            <div className="grid gap-1 scale-[0.9] sm:scale-100 transition-all duration-300 w-full h-full" style={{ gridTemplateColumns: `repeat(${COLS}, minmax(0, 1fr))` }}>
-              {grid.map((row, r) =>
-                row.map((cell, c) => {
-                  const isVisited = visited[`${r},${c}`];
-                  const isFrontier = frontier.some(f => f.r === r && f.c === c);
-                  const isPath = path.some(p => p.r === r && p.c === c);
-                  
-                  let bgClass = "bg-slate-800 border-slate-700 hover:bg-slate-700";
-                  if (cell.isStart) bgClass = "bg-emerald-500 shadow-lg shadow-emerald-500/30 border-emerald-400";
-                  else if (cell.isEnd) bgClass = "bg-rose-500 shadow-lg shadow-rose-500/30 border-rose-400 animate-pulse";
-                  else if (cell.isWall) bgClass = "bg-blue-950 border-blue-800 text-blue-300 font-bold hover:bg-blue-900";
-                  else if (isPath) bgClass = "bg-cyan-900/40 border-cyan-800/60";
-                  else if (isVisited) bgClass = "bg-sky-950/30 border-sky-900/40 text-cyan-200/50";
-                  else if (isFrontier) bgClass = "bg-indigo-950/40 border-indigo-900/50";
-
-                  return (
-                    <div
-                      key={`${r}-${c}`}
-                      onClick={() => toggleWall(r, c)}
-                      className={`aspect-square rounded-md border text-[7px] sm:text-[9px] font-bold flex flex-col items-center justify-center cursor-pointer transition-all duration-150 relative overflow-hidden ${bgClass}`}
-                    >
-                      {cell.isWall ? (
-                        <div className="absolute inset-0 w-full h-full flex flex-col justify-end bg-blue-950/40">
-                          <svg className="w-full h-[65%] absolute bottom-0 left-0 overflow-visible" viewBox="0 0 100 40" preserveAspectRatio="none">
-                            <path d="M0 20 Q25 10 50 20 T100 20 L100 40 L0 40 Z" fill="#1e3a8a" opacity="0.65" className="animate-wave-sway-vertical" />
-                            <path d="M0 24 Q25 16 50 24 T100 24 L100 40 L0 40 Z" fill="#2563eb" opacity="0.85" className="animate-wave-sway-vertical" style={{ animationDelay: '0.6s' }} />
-                          </svg>
-                        </div>
-                      ) : cell.isStart ? (
-                        'HQ'
-                      ) : cell.isEnd ? (
-                        <div className="flex flex-col items-center justify-center relative w-full h-full">
-                          <SurvivorVisual className="w-6 h-6 -mt-1 select-none pointer-events-none" />
-                        </div>
-                      ) : (
-                        ''
-                      )}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
+      {loading ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-3">
+          <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin"></div>
+          <span className="text-sm text-slate-400 font-medium">Connecting to active backend database...</span>
         </div>
+      ) : error ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-center p-6 gap-3">
+          <ShieldAlert className="w-12 h-12 text-rose-500 animate-pulse" />
+          <h3 className="font-bold text-slate-200">Database Connection Offline</h3>
+          <p className="text-xs text-slate-400 max-w-md">{error}</p>
+        </div>
+      ) : (
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-4 my-4 overflow-hidden">
+          {/* Map Canvas */}
+          <div className="lg:col-span-2 flex flex-col justify-between p-4 bg-slate-950 border border-slate-850 rounded-xl overflow-hidden relative">
+            <RainEffect density={35} />
 
-        {/* Logs Panel with Fixed Footer Detailed Box */}
-        <div className="bg-slate-950 border border-slate-850 rounded-xl p-4 flex flex-col h-full overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3 shrink-0">
-            <div className="flex items-center gap-2">
-              <div className="relative flex h-2 w-2">
-                <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRunning ? 'bg-sky-400' : 'bg-slate-600'}`}></span>
-                <span className={`relative inline-flex rounded-full h-2 w-2 ${isRunning ? 'bg-sky-500' : 'bg-slate-500'}`}></span>
-              </div>
-              <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Search Logic Logs</h3>
+            {/* Drifting Clouds */}
+            <div className="absolute inset-0 pointer-events-none overflow-hidden z-20">
+              <svg className="absolute w-24 h-12 animate-cloud-drift-slow top-2" viewBox="0 0 100 50">
+                <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#e2e8f0" stroke="#cbd5e1" strokeWidth="0.5" opacity="0.08" />
+              </svg>
+              <svg className="absolute w-32 h-16 animate-cloud-drift-fast top-8" viewBox="0 0 100 50">
+                <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#cbd5e1" stroke="#94a3b8" strokeWidth="0.5" opacity="0.06" />
+              </svg>
             </div>
-            <div className="flex items-center gap-2">
+
+            {/* Direct Map Selection Controls Overlay */}
+            <div className="absolute top-4 right-4 z-20 flex gap-2">
               <button
-                onClick={copyLogsToClipboard}
-                className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-2 py-0.5 rounded border border-slate-700 transition-colors"
-              >
-                Copy Logs
-              </button>
-              <span className="text-[9px] bg-slate-900 text-sky-400 font-mono px-2 py-0.5 rounded border border-slate-800">
-                {isRunning ? "RUNNING" : "STANDBY"}
-              </span>
-            </div>
-          </div>
-          
-          <div className="flex-grow overflow-y-auto flex flex-col gap-1.5 p-3 bg-slate-900/50 rounded-lg min-h-0">
-            {logs.map((log, idx) => (
-              <div 
-                key={idx} 
-                onClick={() => setSelectedLog(log)}
-                className={`border-b border-slate-850/50 pb-2 last:border-0 flex items-center justify-between gap-2 cursor-pointer px-2.5 py-1.5 rounded transition-colors duration-150 ${
-                  selectedLog === log ? 'text-sky-400 font-bold bg-slate-800/80 shadow shadow-sky-950/20' : 'text-slate-300 hover:bg-slate-800/50 hover:text-slate-100'
+                onClick={() => setMapSelectMode(mapSelectMode === 'start' ? null : 'start')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold font-mono transition-all duration-150 active:scale-95 shadow-md ${
+                  mapSelectMode === 'start'
+                    ? 'bg-emerald-500/20 border-emerald-400 text-emerald-400'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
                 }`}
               >
-                <span className="text-[11px] leading-relaxed">
-                  <span className="text-sky-500 font-bold font-mono mr-1">[{idx + 1}]</span> {log.text}
-                </span>
-                <Info className={`w-3.5 h-3.5 shrink-0 ${selectedLog === log ? 'text-sky-400' : 'text-slate-500'}`} />
-              </div>
-            ))}
+                <span className={`w-2 h-2 rounded-full bg-emerald-500 ${mapSelectMode === 'start' ? 'animate-ping' : ''}`}></span>
+                Set Start
+              </button>
+              <button
+                onClick={() => setMapSelectMode(mapSelectMode === 'target' ? null : 'target')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-[10px] font-bold font-mono transition-all duration-150 active:scale-95 shadow-md ${
+                  mapSelectMode === 'target'
+                    ? 'bg-rose-500/20 border-rose-400 text-rose-400'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:border-slate-700'
+                }`}
+              >
+                <span className={`w-2 h-2 rounded-full bg-rose-500 ${mapSelectMode === 'target' ? 'animate-ping' : ''}`}></span>
+                Set Target
+              </button>
+            </div>
+
+            {/* SVG Map */}
+            <div className="flex-1 bg-slate-900/40 rounded-lg relative overflow-hidden flex items-center justify-center">
+              <svg viewBox="0 0 850 370" className="w-full h-full z-10">
+                {/* Outgoing connection lines */}
+                {edges.map((edge, idx) => {
+                  const u = getScaledCoordinates(edge.sourceId);
+                  const v = getScaledCoordinates(edge.targetId);
+                  return (
+                    <g key={`edge-${idx}`}>
+                      <line
+                        x1={u.x}
+                        y1={u.y}
+                        x2={v.x}
+                        y2={v.y}
+                        stroke={edge.blocked ? "#EF4444" : "#1E293B"}
+                        strokeWidth={edge.blocked ? "2.5" : "3.5"}
+                        strokeDasharray={edge.blocked ? "2 3" : "4 4"}
+                        opacity={edge.blocked ? 0.7 : 1}
+                      />
+                    </g>
+                  );
+                })}
+
+                {/* Optimal path lines */}
+                {algorithm === 'dijkstra' && path.length > 1 && path.map((nodeId, idx) => {
+                  if (idx === path.length - 1) return null;
+                  const nextId = path[idx + 1];
+                  const u = getScaledCoordinates(nodeId);
+                  const v = getScaledCoordinates(nextId);
+                  return (
+                    <line
+                      key={`path-dijkstra-${idx}`}
+                      x1={u.x}
+                      y1={u.y}
+                      x2={v.x}
+                      y2={v.y}
+                      stroke="#22D3EE"
+                      strokeWidth="5"
+                      className="transition-all duration-300 ease-in-out drop-shadow-[0_0_8px_rgba(34,211,238,0.7)]"
+                    />
+                  );
+                })}
+
+                {algorithm === 'astar' && path.length > 1 && path.map((nodeId, idx) => {
+                  if (idx === path.length - 1) return null;
+                  const nextId = path[idx + 1];
+                  const u = getScaledCoordinates(nodeId);
+                  const v = getScaledCoordinates(nextId);
+                  return (
+                    <line
+                      key={`path-astar-${idx}`}
+                      x1={u.x}
+                      y1={u.y}
+                      x2={v.x}
+                      y2={v.y}
+                      stroke="#10B981"
+                      strokeWidth="5"
+                      className="transition-all duration-300 ease-in-out drop-shadow-[0_0_8px_rgba(16,185,129,0.7)]"
+                    />
+                  );
+                })}
+
+                {algorithm === 'compare' && results && (() => {
+                  return (
+                    <>
+                      {/* Dijkstra Path in Purple */}
+                      {dijkstraPath.length > 1 && dijkstraPath.map((nodeId, idx) => {
+                        if (idx === dijkstraPath.length - 1) return null;
+                        const nextId = dijkstraPath[idx + 1];
+                        const u = getScaledCoordinates(nodeId);
+                        const v = getScaledCoordinates(nextId);
+                        return (
+                          <line
+                            key={`compare-dijkstra-${idx}`}
+                            x1={u.x}
+                            y1={u.y}
+                            x2={v.x}
+                            y2={v.y}
+                            stroke="#A855F7"
+                            strokeWidth="6"
+                            className="transition-all duration-300 ease-in-out opacity-85"
+                          />
+                        );
+                      })}
+                      {/* A* Path overlay in slightly thinner Green */}
+                      {astarPath.length > 1 && astarPath.map((nodeId, idx) => {
+                        if (idx === astarPath.length - 1) return null;
+                        const nextId = astarPath[idx + 1];
+                        const u = getScaledCoordinates(nodeId);
+                        const v = getScaledCoordinates(nextId);
+                        return (
+                          <line
+                            key={`compare-astar-${idx}`}
+                            x1={u.x}
+                            y1={u.y}
+                            x2={v.x}
+                            y2={v.y}
+                            stroke="#10B981"
+                            strokeWidth="3.5"
+                            className="transition-all duration-300 ease-in-out drop-shadow-[0_0_6px_rgba(16,185,129,0.8)]"
+                          />
+                        );
+                      })}
+                    </>
+                  );
+                })()}
+
+                {/* Nodes */}
+                {nodes.map(n => {
+                  const coords = getScaledCoordinates(n.id);
+                  const isSource = sourceId.toString() === n.id.toString();
+                  const isTarget = targetId.toString() === n.id.toString();
+                  const isPartOfPath = path.includes(n.id);
+
+                  let fill = "#1E293B";
+                  let stroke = "#475569";
+                  if (isSource) { fill = "#10B981"; stroke = "#34D399"; }
+                  else if (isTarget) { fill = "#EF4444"; stroke = "#F87171"; }
+                  else if (isPartOfPath) { fill = "#0891B2"; stroke = "#22D3EE"; }
+
+                  return (
+                    <g 
+                      key={n.id} 
+                      transform={`translate(${coords.x}, ${coords.y})`}
+                      onClick={() => handleNodeClick(n.id)}
+                      className={`transition-all duration-200 ${
+                        mapSelectMode ? 'cursor-pointer hover:brightness-125' : ''
+                      }`}
+                    >
+                      {isTarget && (
+                        <g transform="translate(-12, -34)">
+                          <SurvivorVisual width={24} height={24} />
+                        </g>
+                      )}
+                      <circle
+                        r={n.nodeType === 'HQ' ? 18 : 13}
+                        fill={fill}
+                        stroke={stroke}
+                        strokeWidth="3.5"
+                        className={`transition-all duration-200 ${
+                          mapSelectMode 
+                            ? 'hover:scale-125 hover:stroke-white cursor-pointer' 
+                            : 'hover:scale-110 cursor-pointer'
+                        }`}
+                      />
+                      <text
+                        y="4"
+                        fill="#F1F5F9"
+                        fontSize="9"
+                        fontWeight="black"
+                        textAnchor="middle"
+                        className="pointer-events-none"
+                      >
+                        {n.nodeType === 'HQ' ? 'HQ' : n.id}
+                      </text>
+                      {(() => {
+                        return (
+                          <text
+                            y="26"
+                            fill={isSource || isTarget ? "#F1F5F9" : "#94A3B8"}
+                            fontSize="9"
+                            fontWeight={isSource || isTarget ? "extrabold" : "bold"}
+                            textAnchor="middle"
+                            className="drop-shadow-lg pointer-events-none transition-all duration-150"
+                          >
+                            {n.name}
+                          </text>
+                        );
+                      })()}
+                    </g>
+                  );
+                })}
+ 
+                {/* Moving Boat overlay */}
+                {boatIndex >= 0 && path && path.length > 0 && path[boatIndex] !== undefined && (() => {
+                  const nodeCoords = getScaledCoordinates(path[boatIndex]);
+                  return (
+                    <g 
+                      transform={`translate(${nodeCoords.x}, ${nodeCoords.y - 4})`} 
+                      style={{ transition: 'transform 0.5s cubic-bezier(0.4, 0, 0.2, 1)' }}
+                      className="z-30"
+                    >
+                      <g className="animate-boat-pitch">
+                        <g transform="translate(-16, -16) scale(1.3)">
+                          {/* Boat shapes drawn directly in native coordinates */}
+                          <path d="M3 15 L21 15 L17 19 H7 Z" fill="#0284c7" stroke="#22d3ee" strokeWidth="1" />
+                          <line x1="12" y1="15" x2="12" y2="3.5" stroke="#f8fafc" strokeWidth="1.5" />
+                          <path d="M11 4.5 L4.5 14 H11 Z" fill="#f8fafc" fillOpacity="0.9" stroke="#22d3ee" strokeWidth="0.5" />
+                          <path d="M13 5.5 L19.5 14 H13 Z" fill="#f8fafc" fillOpacity="0.8" stroke="#22d3ee" strokeWidth="0.5" />
+                          <path d="M12 3.5 L15.5 4.5 L12 5.5" fill="#f97316" />
+                        </g>
+                      </g>
+                    </g>
+                  );
+                })()}
+              </svg>
+            </div>
           </div>
 
-          {/* Dedicated Decision Analysis Box at bottom */}
-          <div className="mt-3 p-3 bg-slate-900 border border-slate-800 rounded-xl flex flex-col h-44 shrink-0 overflow-y-auto">
-            <h4 className="text-[9px] uppercase font-bold tracking-wider text-sky-400 mb-1.5 flex items-center gap-1.5">
-              <Info className="w-3 text-sky-400" />
-              Routing decision analyzer
-            </h4>
-            <p className="text-[10.5px] text-slate-300 font-mono leading-relaxed whitespace-pre-line">
-              {selectedLog ? selectedLog.detail : "Click any step above to inspect its detailed evaluation metrics and pathfinding weights."}
-            </p>
+          {/* Right logs panel */}
+          <div className="bg-slate-950 border border-slate-850 rounded-xl p-4 flex flex-col h-full overflow-hidden">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2 mb-3 shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="relative flex h-2 w-2">
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isRunning ? 'bg-sky-400' : 'bg-slate-600'}`}></span>
+                  <span className={`relative inline-flex rounded-full h-2 w-2 ${isRunning ? 'bg-sky-500' : 'bg-slate-500'}`}></span>
+                </div>
+                <h3 className="text-xs font-bold text-slate-200 uppercase tracking-wider">Search Logic Logs</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={copyLogsToClipboard}
+                  className="text-[10px] bg-slate-800 hover:bg-slate-700 text-slate-300 font-semibold px-2 py-0.5 rounded border border-slate-700 transition-colors"
+                >
+                  Copy Logs
+                </button>
+              </div>
+            </div>
+            
+            {/* Half-Half Container for Logs & Decision Analyzer */}
+            <div className="flex-grow flex flex-col gap-3 h-full min-h-0">
+              {/* Search Logic Logs */}
+              <div className="h-[48%] overflow-y-auto flex flex-col gap-1.5 p-3 bg-slate-900/50 rounded-lg border border-slate-850/50 min-h-0">
+                {filteredLogs.map((log, idx) => (
+                  <div 
+                    key={idx} 
+                    onClick={() => setSelectedLog(log)}
+                    className={`border-b border-slate-850/50 pb-2 last:border-0 flex items-center justify-between gap-2 cursor-pointer px-2.5 py-1.5 rounded transition-colors duration-150 shrink-0 ${
+                      selectedLog === log ? 'text-sky-400 font-bold bg-slate-800/80 shadow shadow-sky-950/20' : 'text-slate-300 hover:bg-slate-800/50 hover:text-slate-100'
+                    }`}
+                  >
+                    <span className="text-[11px] leading-relaxed">
+                      <span className="text-sky-500 font-bold font-mono mr-1">[{idx + 1}]</span> {log.text}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Dedicated Decision Analysis Box */}
+              <div className="h-[48%] p-3 bg-slate-900 border border-slate-800 rounded-xl flex flex-col overflow-y-auto min-h-0">
+                <h4 className="text-[9px] uppercase font-bold tracking-wider text-sky-400 mb-1.5 flex items-center gap-1.5 shrink-0">
+                  <Info className="w-3 text-sky-400" />
+                  Routing decision analyzer
+                </h4>
+                <p className="text-[10.5px] text-slate-300 font-mono leading-relaxed whitespace-pre-line">
+                  {selectedLog ? selectedLog.detail : "Click any step above to inspect its detailed evaluation metrics and pathfinding weights."}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Control Panel */}
-      <div className="flex flex-col gap-3 shrink-0">
-        <div className="flex items-center justify-between text-xs text-slate-400">
-          <div className="flex items-center gap-4">
-            <div>
-              Nodes Explored: <span className="font-bold text-sky-400 text-sm">{visitedCount}</span>
+      {!loading && !error && (
+        <div className="flex flex-col gap-3 shrink-0">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center bg-slate-950 p-4 border border-slate-850 rounded-xl">
+            {/* Start Node Custom Dropdown */}
+            <div className="flex flex-col gap-1 relative" ref={startSelectRef}>
+              <label className="text-[10px] uppercase font-bold text-slate-450 tracking-wider">Start Location (Source)</label>
+              <button
+                onClick={() => !isRunning && setIsStartOpen(!isStartOpen)}
+                disabled={isRunning}
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold flex items-center justify-between text-left text-slate-100 hover:border-slate-700 transition-colors focus:outline-none disabled:opacity-50"
+              >
+                <span className="flex items-center gap-2 truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                  {nodes.find(n => n.id.toString() === sourceId)?.name || 'Select Start'}
+                </span>
+                <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+              </button>
+              {isStartOpen && (
+                <div className="absolute left-0 right-0 bottom-full mb-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto py-1">
+                  {nodes.map(n => (
+                    <div
+                      key={n.id}
+                      onClick={() => {
+                        if (n.id.toString() === targetId.toString()) {
+                          showToast("Start location cannot be the same as target location!");
+                          return;
+                        }
+                        setSourceId(n.id.toString());
+                        setIsStartOpen(false);
+                      }}
+                      className={`px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                        sourceId === n.id.toString()
+                          ? 'bg-sky-500/20 text-sky-400 font-bold'
+                          : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                      }`}
+                    >
+                      {n.name}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-            <div>
-              Path Distance: <span className="font-bold text-emerald-400 text-sm">{pathLength ? `${pathLength} units` : 'N/A'}</span>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <span>Speed:</span>
-            <input
-              type="range"
-              min="10"
-              max="200"
-              value={speed}
-              onChange={(e) => setSpeed(Number(e.target.value))}
-              className="w-24 accent-sky-400 bg-slate-800"
-            />
-          </div>
-        </div>
 
-        <div className="flex gap-2">
-          <button
-            onClick={startPathfinding}
-            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-sky-600/50 to-teal-600/50 hover:from-sky-600 hover:to-teal-600 text-slate-100 font-bold py-2.5 px-4 rounded-xl transition-all shadow-lg"
-          >
-            <Play className="w-4 h-4 fill-slate-100" />
-            {isRunning ? 'Pause Simulation' : 'Start Simulation'}
-          </button>
+            {/* Target Node Custom Dropdown */}
+            <div className="flex flex-col gap-1 relative" ref={targetSelectRef}>
+              <label className="text-[10px] uppercase font-bold text-slate-450 tracking-wider">Target Location (Destination)</label>
+              <button
+                onClick={() => !isRunning && setIsTargetOpen(!isTargetOpen)}
+                disabled={isRunning}
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs font-semibold flex items-center justify-between text-left text-slate-100 hover:border-slate-700 transition-colors focus:outline-none disabled:opacity-50"
+              >
+                <span className="flex items-center gap-2 truncate">
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0"></span>
+                  {nodes.find(n => n.id.toString() === targetId)?.name || 'Select Target'}
+                </span>
+                <ChevronDown className="w-4 h-4 text-slate-400 shrink-0" />
+              </button>
+              {isTargetOpen && (
+                <div className="absolute left-0 right-0 bottom-full mb-1.5 bg-slate-900/95 backdrop-blur-md border border-slate-800 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto py-1">
+                  {nodes.map(n => (
+                    <div
+                      key={n.id}
+                      onClick={() => {
+                        if (n.id.toString() === sourceId.toString()) {
+                          showToast("Target location cannot be the same as start location!");
+                          return;
+                        }
+                        setTargetId(n.id.toString());
+                        setIsTargetOpen(false);
+                      }}
+                      className={`px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                        targetId === n.id.toString()
+                          ? 'bg-sky-500/20 text-sky-400 font-bold'
+                          : 'text-slate-300 hover:bg-slate-800 hover:text-slate-100'
+                      }`}
+                    >
+                      {n.name}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Action buttons */}
+            <div className="flex gap-2 h-full items-end mt-2 md:mt-0">
+              <button
+                onClick={calculateRoute}
+                disabled={isRunning}
+                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-teal-600 text-slate-950 font-bold py-2 px-4 rounded-xl transition-all shadow-lg text-xs"
+              >
+                <Play className="w-4 h-4 fill-slate-950" />
+                Optimize Route
+              </button>
+              
+              <button
+                onClick={handleReset}
+                disabled={isRunning}
+                className="bg-slate-850 hover:bg-slate-800 border border-slate-700 text-slate-200 p-2.5 rounded-xl transition-all"
+                title="Reset"
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
           
-          <button
-            onClick={resetGrid}
-            className="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2.5 rounded-xl border border-slate-700 transition-all"
-            title="Reset"
-          >
-            <RotateCcw className="w-4 h-4" />
-          </button>
+          {/* Compare Stats metrics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-950 p-3.5 border border-slate-850 rounded-xl text-center text-xs shrink-0">
+            <div className="border-r border-slate-850 last:border-r-0">
+              <div className="text-slate-500 font-bold text-[9px] uppercase">Optimal Distance</div>
+              <div className="text-emerald-400 font-extrabold text-sm mt-0.5">
+                {results ? `${results.dijkstra.pathResult.totalDistanceKm} Km` : '—'}
+              </div>
+            </div>
+            <div className="border-r border-slate-850 last:border-r-0">
+              <div className="text-slate-500 font-bold text-[9px] uppercase">Travel Time</div>
+              <div className="text-cyan-450 font-extrabold text-sm mt-0.5">
+                {results ? `${results.dijkstra.pathResult.totalTravelTimeMins} mins` : '—'}
+              </div>
+            </div>
+            <div className="border-r border-slate-850 last:border-r-0">
+              <div className="text-slate-500 font-bold text-[9px] uppercase">Dijkstra Explored</div>
+              <div className="text-amber-500 font-extrabold text-sm mt-0.5">
+                {results ? `${results.dijkstra.pathResult.nodesExplored} nodes` : '—'}
+              </div>
+            </div>
+            <div>
+              <div className="text-slate-500 font-bold text-[9px] uppercase">A* Explored</div>
+              <div className="text-sky-400 font-extrabold text-sm mt-0.5">
+                {results ? `${results.astar.pathResult.nodesExplored} nodes` : '—'}
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
 
       {shouldRenderModal && createPortal(
         <div 
@@ -513,7 +840,7 @@ export default function Module1RouteOpt() {
           <div className="flex items-center justify-between border-b border-slate-800 pb-3.5 shrink-0">
             <div>
               <h3 className="text-base font-extrabold text-slate-100 flex items-center gap-2">
-                <Info className="w-5 h-5 text-sky-400" />
+                <Compass className="w-5 h-5 text-sky-400" />
                 M1: Route Optimization Guide
               </h3>
               <p className="text-[10px] text-slate-400 mt-0.5">
@@ -533,7 +860,7 @@ export default function Module1RouteOpt() {
             <div>
               <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">What is this page for?</h4>
               <p className="leading-relaxed">
-                This module helps you compare pathfinding efficiency between <strong>Dijkstra's Algorithm</strong> and <strong>A* Search</strong>. When a disaster strikes, finding the shortest safe path from the Command Headquarters (HQ) to a target camp is critical. This page visualizes how the algorithms navigate around flooded areas to establish safe routes.
+                This module helps disaster management teams compare pathfinding efficiency between <strong>Dijkstra's Algorithm</strong> and <strong>A* Search</strong> using real-world coordinates from the backend database. In flood emergency scenarios, identifying the shortest safe travel path from Command Headquarters (HQ) or starting depots to rescue camps is critical to establish active rescue supply lines.
               </p>
             </div>
 
@@ -541,34 +868,55 @@ export default function Module1RouteOpt() {
               <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">Interactive Controls</h4>
               <ul className="list-disc pl-4 space-y-2 leading-relaxed">
                 <li>
-                  <strong className="text-slate-100">Algorithm Toggles (Top Right):</strong> Choose between <em>Dijkstra's Algorithm</em> (explores paths uniformly in all directions) and <em>A* Search</em> (uses target coordinates as a goal-directed heuristic to search faster).
+                  <strong className="text-slate-100">Custom Dropdown Selectors:</strong> Use the interactive dropdown menus at the bottom to choose starting sources and target camps. Selections automatically clear old results.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Speed Slider (Bottom Right):</strong> Drag the slider to set the delay per step from 200ms (Slow) down to 10ms (Turbo) to watch the frontier expansion at your own pace.
+                  <strong className="text-slate-100">Direct Map Select ("Set Start" / "Set Target"):</strong> Toggle these overlay buttons at the top-right of the map, then click any node directly on the map to set it as a coordinate. Selection modes automatically reset upon click.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Start / Pause Simulation:</strong> Play or pause the step-by-step frontier search from HQ to the target camp.
+                  <strong className="text-slate-100">Algorithm Filter (Top Right):</strong> Switch between <em>Dijkstra Only</em> (uniform exploration), <em>A* Heuristic Only</em> (goal-directed formulation using Haversine heuristics), or <em>Compare Both</em>.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Reset Button:</strong> Clears all path traces, frontier nodes, and resets the grid to standby.
+                  <strong className="text-slate-100">Optimize Route:</strong> Submits path queries to the Spring Boot REST server to calculate optimal paths.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Copy Logs:</strong> Copies all execution steps and distance logs to your clipboard.
+                  <strong className="text-slate-100">Reset Button:</strong> Clears active route lines, frontier logs, and returns the panel to standby.
+                </li>
+                <li>
+                  <strong className="text-slate-100">Copy Logs:</strong> Copies currently visible execution steps and comparative logs matching your selected filter.
                 </li>
               </ul>
             </div>
 
             <div>
-              <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">Algorithm Test Scenarios</h4>
+              <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">Map Visual Indicators</h4>
               <ul className="list-disc pl-4 space-y-2 leading-relaxed">
                 <li>
-                  <strong className="text-slate-100">Scenario 1: Dijkstra Uniform Search</strong> - Watch Dijkstra expand uniformly outwards like a circle. Since it has no goal awareness, it explores nodes in all directions before locating the target.
+                  <strong className="text-slate-100">Node Circles:</strong> Green represents the start, red represents the target with an orange survivor visual, and colored circles indicate nodes on the computed path.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Scenario 2: A* Goal-Directed Heuristic</strong> - Run A* and see how the search frontier stretches straight towards the target camp, exploring far fewer cells while still finding the same optimal distance.
+                  <strong className="text-slate-100">Compare Path Overlays:</strong> Displays both calculated routes simultaneously in Compare mode—Dijkstra's path is drawn in <strong>glowing purple</strong> and A*'s path in a <strong>thinner green line</strong> to expose detours.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Scenario 3: Flood Obstacle Detour</strong> - Watch how the search frontier shapes around the flood zone (dark blue water block). If a block cuts off the straight path, the search detours dynamically to find the next shortest path.
+                  <strong className="text-slate-100">Grey Dashed Lines:</strong> Represents normal, open roads.
+                </li>
+                <li>
+                  <strong className="text-slate-100">Red Dashed Lines:</strong> Represents blocked roads (skipped by pathfinders) loaded dynamically from the database.
+                </li>
+                <li>
+                  <strong className="text-slate-100">Sailboat Marker:</strong> Animates the path traversal from the start node to the target camp.
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">Analytics & Logs Panels</h4>
+              <ul className="list-disc pl-4 space-y-2 leading-relaxed">
+                <li>
+                  <strong className="text-slate-100">Search Logic Logs:</strong> Lists execution speeds and route nodes. Clicking any log opens its metrics in the analyzer.
+                </li>
+                <li>
+                  <strong className="text-slate-100">Routing Decision Analyzer:</strong> Displays granular comparisons, workload reduction percentages, and path equivalence tests.
                 </li>
               </ul>
             </div>

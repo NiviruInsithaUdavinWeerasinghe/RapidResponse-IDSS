@@ -8,5 +8,4 @@ import java.util.List;
 
 @Repository
 public interface EdgeRepository extends JpaRepository<EdgeEntity, Long> {
-    List<EdgeEntity> findByBlocked(boolean blocked);
 }

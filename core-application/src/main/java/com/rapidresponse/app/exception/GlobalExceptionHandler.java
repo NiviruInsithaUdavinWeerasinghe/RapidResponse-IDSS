@@ -52,6 +52,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
     }
 
+    @ExceptionHandler(org.springframework.web.server.ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatus(org.springframework.web.server.ResponseStatusException ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                ex.getStatusCode().value(),
+                ex.getStatusCode().toString(),
+                ex.getReason() != null ? ex.getReason() : ex.getMessage(),
+                getPath(request)
+        );
+        return new ResponseEntity<>(errorResponse, ex.getStatusCode());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(

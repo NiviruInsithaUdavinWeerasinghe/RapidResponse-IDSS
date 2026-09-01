@@ -82,7 +82,7 @@ public class DecisionController {
 
     @Operation(summary = "Seed synthetic sample SOS requests for testing and benchmarks")
     @PostMapping("/sample-data")
-    public ResponseEntity<List<SOSRequestResponse>> seedSampleData(@RequestParam(defaultValue = "15") int count) {
+    public ResponseEntity<List<SOSRequestResponse>> seedSampleData(@RequestParam(name = "count", defaultValue = "15") int count) {
         return ResponseEntity.ok(decisionService.seedSampleRequests(count));
     }
 }

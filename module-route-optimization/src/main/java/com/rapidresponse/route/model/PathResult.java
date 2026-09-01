@@ -17,18 +17,25 @@ public class PathResult {
     private double totalTravelTimeMins;
     private int nodesExplored;
     private long executionTimeNanos;
+    private String message;
 
     public PathResult() {
     }
 
     public PathResult(String status, List<Long> nodeSequence, double totalDistanceKm,
                       double totalTravelTimeMins, int nodesExplored, long executionTimeNanos) {
+        this(status, nodeSequence, totalDistanceKm, totalTravelTimeMins, nodesExplored, executionTimeNanos, null);
+    }
+
+    public PathResult(String status, List<Long> nodeSequence, double totalDistanceKm,
+                      double totalTravelTimeMins, int nodesExplored, long executionTimeNanos, String message) {
         this.status = status;
         this.nodeSequence = nodeSequence;
         this.totalDistanceKm = totalDistanceKm;
         this.totalTravelTimeMins = totalTravelTimeMins;
         this.nodesExplored = nodesExplored;
         this.executionTimeNanos = executionTimeNanos;
+        this.message = message;
     }
 
     public String getStatus() {
@@ -55,6 +62,10 @@ public class PathResult {
         return executionTimeNanos;
     }
 
+    public String getMessage() {
+        return message;
+    }
+
     public static Builder builder() {
         return new Builder();
     }
@@ -66,6 +77,7 @@ public class PathResult {
         private double totalTravelTimeMins;
         private int nodesExplored;
         private long executionTimeNanos;
+        private String message;
 
         public Builder status(String status) {
             this.status = status;
@@ -97,9 +109,14 @@ public class PathResult {
             return this;
         }
 
+        public Builder message(String message) {
+            this.message = message;
+            return this;
+        }
+
         public PathResult build() {
             return new PathResult(status, nodeSequence, totalDistanceKm,
-                    totalTravelTimeMins, nodesExplored, executionTimeNanos);
+                    totalTravelTimeMins, nodesExplored, executionTimeNanos, message);
         }
     }
 
@@ -117,6 +134,10 @@ public class PathResult {
     }
 
     public static PathResult unreachable(int nodesExplored, long executionTimeNanos) {
+        return unreachable(nodesExplored, executionTimeNanos, null);
+    }
+
+    public static PathResult unreachable(int nodesExplored, long executionTimeNanos, String message) {
         return PathResult.builder()
                 .status(STATUS_NO_PATH)
                 .nodeSequence(Collections.emptyList())
@@ -124,6 +145,7 @@ public class PathResult {
                 .totalTravelTimeMins(0.0)
                 .nodesExplored(nodesExplored)
                 .executionTimeNanos(executionTimeNanos)
+                .message(message)
                 .build();
     }
 }

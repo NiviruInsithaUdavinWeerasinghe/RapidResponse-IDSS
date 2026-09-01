@@ -1,13 +1,17 @@
 package com.rapidresponse.route.service;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.rapidresponse.network.service.NetworkService;
 import com.rapidresponse.route.algorithm.AStarPathfinder;
 import com.rapidresponse.route.algorithm.DijkstraPathfinder;
 import com.rapidresponse.route.dto.request.RouteRequest;
@@ -30,23 +34,45 @@ public class RouteService {
 
     public static final String ALGORITHM_DIJKSTRA = "dijkstra";
     public static final String ALGORITHM_ASTAR = "astar";
+    public static final String MSG_DIFFERENT_COMPONENTS = "Nodes are in different network components; no path exists.";
 
     private final NodeRepository nodeRepository;
     private final EdgeRepository edgeRepository;
     private final GraphBuilder graphBuilder;
     private final DijkstraPathfinder dijkstraPathfinder;
     private final AStarPathfinder aStarPathfinder;
+    private final Optional<NetworkService> networkService;
 
     public RouteService(NodeRepository nodeRepository,
                         EdgeRepository edgeRepository,
                         GraphBuilder graphBuilder,
                         DijkstraPathfinder dijkstraPathfinder,
                         AStarPathfinder aStarPathfinder) {
+        this(nodeRepository, edgeRepository, graphBuilder, dijkstraPathfinder, aStarPathfinder, Optional.empty());
+    }
+
+    public RouteService(NodeRepository nodeRepository,
+                        EdgeRepository edgeRepository,
+                        GraphBuilder graphBuilder,
+                        DijkstraPathfinder dijkstraPathfinder,
+                        AStarPathfinder aStarPathfinder,
+                        NetworkService networkService) {
+        this(nodeRepository, edgeRepository, graphBuilder, dijkstraPathfinder, aStarPathfinder, Optional.ofNullable(networkService));
+    }
+
+    @Autowired
+    public RouteService(NodeRepository nodeRepository,
+                        EdgeRepository edgeRepository,
+                        GraphBuilder graphBuilder,
+                        DijkstraPathfinder dijkstraPathfinder,
+                        AStarPathfinder aStarPathfinder,
+                        Optional<NetworkService> networkService) {
         this.nodeRepository = nodeRepository;
         this.edgeRepository = edgeRepository;
         this.graphBuilder = graphBuilder;
         this.dijkstraPathfinder = dijkstraPathfinder;
         this.aStarPathfinder = aStarPathfinder;
+        this.networkService = networkService != null ? networkService : Optional.empty();
     }
 
     public RouteResponse findDijkstra(RouteRequest request) {
@@ -102,7 +128,27 @@ public class RouteService {
         requireNode(request.sourceId());
         requireNode(request.targetId());
 
+        long startTime = System.nanoTime();
         Graph graph = loadGraph();
+
+        // Reachability Pre-Check via Module 3's UnionFind (Issue #28)
+        if (networkService.isPresent()) {
+            Boolean connected = networkService.get().isReachablePreCheck(request.sourceId(), request.targetId());
+            if (Boolean.FALSE.equals(connected)) {
+                PathResult disconnectedResult = PathResult.builder()
+                        .status(PathResult.STATUS_NO_PATH)
+                        .nodeSequence(Collections.emptyList())
+                        .totalDistanceKm(Double.POSITIVE_INFINITY)
+                        .totalTravelTimeMins(Double.POSITIVE_INFINITY)
+                        .nodesExplored(0)
+                        .executionTimeNanos(System.nanoTime() - startTime)
+                        .message(MSG_DIFFERENT_COMPONENTS)
+                        .build();
+                return new RouteResponse(algorithm, disconnectedResult, Collections.emptyList(),
+                        graph.getNodeCount(), graph.getEdgeCount());
+            }
+        }
+
         PathResult result = ALGORITHM_DIJKSTRA.equals(algorithm)
                 ? dijkstraPathfinder.findShortestPath(graph, request.sourceId(), request.targetId())
                 : aStarPathfinder.findShortestPath(graph, request.sourceId(), request.targetId());

@@ -278,6 +278,39 @@ public class NetworkService {
     }
 
     /**
+     * Pre-check helper for Module 1 RouteService (Issue #28).
+     * Returns:
+     * - Boolean.FALSE if UnionFind is initialized and nodes are confirmed to be in different components.
+     * - Boolean.TRUE if UnionFind is initialized and nodes are in the same connected component.
+     * - null if UnionFind has not yet been initialized (Module 3 hasn't run), signaling a fallback to standard pathfinding.
+     */
+    public Boolean isReachablePreCheck(Long sourceNodeId, Long targetNodeId) {
+        if (lastUnionFind == null || lastNodeIdToIndex == null) {
+            return null; // Uninitialized -> fallback to Dijkstra/A*
+        }
+        Integer srcIdx = lastNodeIdToIndex.get(sourceNodeId);
+        Integer tgtIdx = lastNodeIdToIndex.get(targetNodeId);
+        if (srcIdx == null || tgtIdx == null) {
+            return null; // Nodes not in current index -> fallback
+        }
+        return lastUnionFind.connected(srcIdx, tgtIdx);
+    }
+
+    /**
+     * Returns the cached UnionFind instance from the last MST run (null if uninitialized).
+     */
+    public UnionFind getLastUnionFind() {
+        return lastUnionFind;
+    }
+
+    /**
+     * Returns the cached node ID to index mapping (null if uninitialized).
+     */
+    public Map<Long, Integer> getLastNodeIdToIndex() {
+        return lastNodeIdToIndex;
+    }
+
+    /**
      * Builds a Graph with ALL edges (including blocked ones). BFS/DFS skip blocked edges
      * at traversal time via edge.isBlocked(), so the same graph can be re-analysed after
      * toggling road closures without rebuilding.

@@ -1157,7 +1157,7 @@ export default function Module5TSPSequencing() {
             <div>
               <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">What is this page for?</h4>
               <p className="leading-relaxed">
-                This module resolves the <strong>Traveling Salesman Problem (TSP)</strong> to find the most efficient route sequence connecting 12 separate camps. By starting at the HQ Depot, visiting every camp exactly once, and returning to HQ, it minimizes fuel consumption and response times.
+                This module resolves the <strong>Traveling Salesman Problem (TSP)</strong> to find the most efficient route sequence connecting 12 separate camps. By starting at the HQ Depot, visiting every camp exactly once, and returning to HQ, it minimizes fuel consumption and emergency response times.
               </p>
             </div>
 
@@ -1165,19 +1165,22 @@ export default function Module5TSPSequencing() {
               <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">Interactive Controls</h4>
               <ul className="list-disc pl-4 space-y-2 leading-relaxed">
                 <li>
-                  <strong className="text-slate-100">Algorithm Toggles (Top Right):</strong> Choose between <em>2-opt Heuristic</em> (untangles crossing paths iteratively for quick, near-optimal routes) and <em>Held-Karp (Exact DP)</em> (uses dynamic programming to guarantee the mathematically optimal shortest route).
+                  <strong className="text-slate-100">Execution Speed Toggle:</strong> Switch between <span className="text-amber-400 font-semibold">🎬 Simulation</span> (renders 60FPS step-by-step visual path untangling and DP state evaluation) and <span className="text-emerald-400 font-semibold">⚡ Instant</span> (bypasses visual delays, snaps to the solved route instantly, and launches immediate helicopter takeoff).
                 </li>
                 <li>
-                  <strong className="text-slate-100">Calculate Optimal Tour (Bottom):</strong> Starts running the optimizer. Once resolved, the helicopter takes off and flies along the calculated path sequence.
+                  <strong className="text-slate-100">Algorithm Tabs (Top Right):</strong> Switch between <em>2-opt Heuristic</em> (fast local search untangling crossing paths), <em>Held-Karp (Exact DP)</em> (uses dynamic programming to guarantee the mathematically optimal shortest route), and <em>Side-by-Side Comparison</em> (dual-map side-by-side benchmark).
                 </li>
                 <li>
-                  <strong className="text-slate-100">Shuffle Tour Button (Bottom):</strong> Randomizes the initial sequence of camps, letting you test how the algorithms handle different starting layouts.
+                  <strong className="text-slate-100">Calculate Optimal Tour:</strong> Solves the TSP tour with backend Spring Boot API integration and launches helicopter rescue flight along the optimized path.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Reset Button (Bottom):</strong> Stops any active flights, returns the helicopter to HQ, resets the route layout, and clears logs.
+                  <strong className="text-slate-100">Shuffle Tour Button:</strong> Randomizes initial camp layouts to test how algorithms untangle different starting configurations.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Copy Logs:</strong> Copies all step cost savings, dynamic programming states, and route sequences to your clipboard.
+                  <strong className="text-slate-100">Reset Button:</strong> Stops active flights, teleports the rescue helicopter back to HQ, resets camp positions, and clears execution logs.
+                </li>
+                <li>
+                  <strong className="text-slate-100">Copy Logs:</strong> Copies step-by-step cost savings, subproblem states, and optimal path sequences to your clipboard.
                 </li>
               </ul>
             </div>
@@ -1186,10 +1189,13 @@ export default function Module5TSPSequencing() {
               <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">Algorithm Test Scenarios</h4>
               <ul className="list-disc pl-4 space-y-2 leading-relaxed">
                 <li>
-                  <strong className="text-slate-100">Scenario 1: 2-opt Route Untangling</strong> - Select 2-opt Heuristic. Notice how it starts with crossing paths, and step-by-step performs segment reversals to resolve overlapping paths, cutting distance down.
+                  <strong className="text-slate-100">Scenario 1: 2-opt Route Untangling</strong> - Select 2-opt Heuristic. Notice how crossing line segments untangle step-by-step to reach a local minimum tour.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Scenario 2: Held-Karp Solver Optimal dp</strong> - Select Held-Karp. Watch the logs trace state mask subproblems recursively. This resolves the absolute shortest possible exact tour of 2088px.
+                  <strong className="text-slate-100">Scenario 2: Held-Karp Exact Solver</strong> - Select Held-Karp. Watch the live memo table trace subproblem states recursively to guarantee the exact 2088px global optimum.
+                </li>
+                <li>
+                  <strong className="text-slate-100">Scenario 3: Instant Mode Solve</strong> - Toggle to ⚡ Instant mode and click Calculate Optimal Tour to view 0ms solver execution and instant path snapping.
                 </li>
               </ul>
             </div>

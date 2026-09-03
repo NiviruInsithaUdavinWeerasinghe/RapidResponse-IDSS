@@ -20,6 +20,7 @@ export default function Module2ResourceAlloc() {
   const [stepIndex, setStepIndex] = useState(0);
   const [selectedLog, setSelectedLog] = useState(null);
   const [apiResult, setApiResult] = useState(null);
+  const [isInstantMode, setIsInstantMode] = useState(false);
   
   const [simulationSteps, setSimulationSteps] = useState([]);
   const [finalOptVal, setFinalOptVal] = useState(0);
@@ -163,6 +164,31 @@ export default function Module2ResourceAlloc() {
     setApiResult(null);
   };
 
+  const handleModeSwitch = (instantMode) => {
+    setIsInstantMode(instantMode);
+    stopSimulation();
+    setBestValue(0);
+    setBestItems([]);
+    setCurrentSelection([]);
+    setCurrentWeight(0);
+    setCurrentValue(0);
+    setHistory([]);
+    setStepIndex(0);
+    setSimulationSteps([]);
+    setSelectedLog(null);
+    setApiResult(null);
+
+    const modeName = instantMode ? "⚡ Instant Solved Mode (0ms delay)" : "🎬 Visual Simulation Mode (Step-by-step 800ms animation)";
+    console.log(`%c[Execution Mode Switch DEBUG] User toggled execution mode to: "${modeName}". Resetting active timers, cargo selection, and logs.`, 'color: #10b981; font-weight: bold;');
+    
+    const modeLog = {
+      text: `Execution mode configured to ${instantMode ? 'Instant Solved' : 'Visual Simulation'}.`,
+      detail: `[Execution Mode Policy]\n- Mode: ${modeName}\n- Delay Policy: ${instantMode ? 'Bypasses step-by-step cargo loading animations and solves optimal manifest instantly.' : 'Executes real-time 800ms animation across Knapsack decision tree.'}\n- State Reset: Active timers stopped, cargo selection cleared, and trace logs reset.`
+    };
+    setHistory([modeLog]);
+    setSelectedLog(modeLog);
+  };
+
   const stopSimulation = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -175,6 +201,26 @@ export default function Module2ResourceAlloc() {
     stopSimulation();
     setIsRunning(true);
     
+    if (isInstantMode) {
+      console.log(`%c[Module2 Instant Solved] Bypassed resource allocation step delays. Calculated optimal cargo manifest instantly!`, 'color: #10b981; font-weight: bold;');
+      const finalStep = stepsList[stepsList.length - 1];
+      const allLogs = stepsList.map(s => s.log);
+      if (finalStep) {
+        setCurrentSelection(finalStep.selection);
+        setCurrentWeight(finalStep.weight);
+        setCurrentValue(finalStep.value);
+        if (finalStep.bestValue !== undefined) setBestValue(finalStep.bestValue);
+        if (finalStep.bestItems !== undefined) setBestItems(finalStep.bestItems);
+      }
+      setHistory(allLogs);
+      if (allLogs.length > 0) {
+        setSelectedLog(allLogs[allLogs.length - 1]);
+      }
+      setStepIndex(stepsList.length);
+      setIsRunning(false);
+      return;
+    }
+
     let idx = startIndex;
     timerRef.current = setInterval(() => {
       if (idx >= stepsList.length) {
@@ -680,10 +726,35 @@ export default function Module2ResourceAlloc() {
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 shrink-0">
+            <button
+              type="button"
+              onClick={() => handleModeSwitch(false)}
+              className={`px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border transition-all duration-300 ease-in-out transform-gpu active:scale-95 flex items-center gap-1 ${
+                !isInstantMode 
+                  ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm' 
+                  : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800/40'
+              }`}
+            >
+              🎬 <span>Simulation</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleModeSwitch(true)}
+              className={`px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border transition-all duration-300 ease-in-out transform-gpu active:scale-95 flex items-center gap-1 ${
+                isInstantMode 
+                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm' 
+                  : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800/40'
+              }`}
+            >
+              ⚡ <span>Instant</span>
+            </button>
+          </div>
+
           <button
             onClick={handleStart}
-            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-700 hover:to-teal-700 text-slate-100 font-bold py-2.5 px-4 rounded-xl transition-all shadow-lg"
+            className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-700 hover:to-teal-700 text-slate-100 font-bold py-2.5 px-4 rounded-xl transition-all shadow-lg text-sm"
           >
             <Play className="w-4 h-4 fill-slate-100" />
             {isRunning ? 'Pause Simulation' : (stepIndex > 0 ? 'Continue Simulation' : 'Start Simulation')}
@@ -692,7 +763,7 @@ export default function Module2ResourceAlloc() {
           <button
             onClick={skipSimulationToEnd}
             disabled={!isRunning}
-            className="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 py-2.5 px-4 rounded-xl border border-slate-700 transition-all font-semibold text-xs"
+            className="bg-slate-800 hover:bg-slate-700 disabled:opacity-40 text-slate-200 py-2.5 px-4 rounded-xl border border-slate-700 transition-all font-semibold text-xs shrink-0"
           >
             Skip to End
           </button>
@@ -707,7 +778,7 @@ export default function Module2ResourceAlloc() {
         </div>
       </div>
 
-      {shouldRenderModal && createPortal(
+      {shouldRenderModal && typeof document !== 'undefined' && createPortal(
         <div 
           className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] max-w-[90vw] h-[550px] max-h-[80vh] bg-[#0F172A] border border-slate-700 shadow-2xl shadow-black rounded-2xl p-6 z-[9999] flex flex-col transition-all duration-200 ease-out select-none transform ${
             modalAnimating ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
@@ -745,25 +816,25 @@ export default function Module2ResourceAlloc() {
               <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">Interactive Controls</h4>
               <ul className="list-disc pl-4 space-y-2 leading-relaxed">
                 <li>
-                  <strong className="text-slate-100">Helicopter Selector (Top Left):</strong> Choose between three relief helicopters: <em>RESCUE-01 (700kg limit)</em>, <em>AIR-LIFTER (950kg limit)</em>, or <em>CARGO-MAX (1200kg limit)</em>. Selecting a new helicopter automatically resets the workspace.
+                  <strong className="text-slate-100">Execution Speed Toggle:</strong> Switch between <span className="text-amber-400 font-semibold">🎬 Simulation</span> (renders step-by-step cargo loading animations, weight gauge updates, and upper bound calculations) and <span className="text-emerald-400 font-semibold">⚡ Instant</span> (bypasses visual delays, calculates optimal cargo manifest instantly, and populates all trace logs in 0ms).
                 </li>
                 <li>
-                  <strong className="text-slate-100">Algorithm Toggles (Top Right):</strong> Select between <em>Branch & Bound</em> (which guarantees the mathematically optimal, highest score) and <em>Greedy 2-Approx</em> (a faster heuristic approach).
+                  <strong className="text-slate-100">Helicopter Selector (Top Left):</strong> Choose between three relief helicopters: <em>RESCUE-01 (700kg limit)</em>, <em>AIR-LIFTER (950kg limit)</em>, or <em>CARGO-MAX (1200kg limit)</em>.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Interval / Speed Selector (Bottom Right):</strong> Adjust the time delay between simulation steps from 1.5 seconds (Slow) down to 50 milliseconds (Turbo) to trace the allocation logs at your own pace.
+                  <strong className="text-slate-100">Algorithm Toggles (Top Right):</strong> Select between <em>Branch & Bound</em> (guarantees the mathematically optimal maximum score) and <em>Greedy 2-Approx</em> (fast ratio-based heuristic).
                 </li>
                 <li>
-                  <strong className="text-slate-100">Start / Pause / Continue Simulation:</strong> Play or pause the step-by-step trace of how the algorithm processes the items. If paused, click "Continue Simulation" to resume from the exact same step without re-running.
+                  <strong className="text-slate-100">Start / Pause / Continue Simulation:</strong> Play or pause the step-by-step trace of how the algorithm processes relief cargo items.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Skip to End:</strong> Instantly completes all remaining steps and renders the final optimal results immediately.
+                  <strong className="text-slate-100">Skip to End:</strong> Instantly completes remaining steps and renders the final optimal manifest.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Reset Button:</strong> Stops any running simulation, clears all logs, and resets the cargo bay back to standby.
+                  <strong className="text-slate-100">Reset Button:</strong> Stops any running simulation, clears all logs, and resets the cargo bay to standby.
                 </li>
                 <li>
-                  <strong className="text-slate-100">Copy Logs:</strong> Copies all step-by-step decision details and Knapsack upper bound calculations to your clipboard.
+                  <strong className="text-slate-100">Copy Logs:</strong> Copies all decision details and Knapsack upper bound calculations to your clipboard.
                 </li>
               </ul>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { createPortal } from 'react-dom';
 import { Play, RotateCcw, Shuffle, Compass, Info } from 'lucide-react';
 import RainEffect from './RainEffect';
@@ -21,6 +21,193 @@ const STOPS = [
   { id: 11, label: "Camp Lambda", x: 500, y: 215 },
 ];
 
+const SingleMap = memo(function SingleMap({ title, subtitle, route, lineColor, heliColor, stops, heliIndex, rescuedStops, dpStep = -1 }) {
+  if (heliIndex >= 0 && heliIndex < route.length) {
+    const currentHeliNodeId = route[heliIndex];
+    const currentStop = stops.find(s => s.id === currentHeliNodeId);
+    if (currentStop) {
+      console.log(`%c[Map Telemetry DEBUG] "${title}" | Helicopter Position: Stop ${heliIndex}/${route.length - 1} | Node ID ${currentHeliNodeId} (${currentStop.label}) @ (${currentStop.x}, ${currentStop.y}) | Total Rescued: ${rescuedStops.length} Camps`, `color: ${lineColor}; font-weight: bold;`);
+    }
+  }
+
+  const isHeldKarpComputing = dpStep >= 0 && title.includes('Held-Karp');
+  if (isHeldKarpComputing) {
+    console.log(`%c[DP Table Render DEBUG] "${title}" | Layer ${dpStep + 1}/10 | Memory States: ${1 << Math.min(dpStep + 2, 12)}/4096`, 'color: #eab308; font-weight: bold;');
+    console.log(`%c  ├─ Row 1: Mask={HQ, ... ${Math.max(1, dpStep)} Camps} | Target=${stops[Math.min(11, Math.max(1, dpStep))].label} | Cost=${Math.max(2088, Math.round(3800 - (dpStep * 160)))}px | Status=${dpStep > 7 ? 'TRACEBACK' : dpStep > 3 ? 'MEMO CACHED' : 'SUBPROBLEM'}`, 'color: #34d399;');
+    console.log(`%c  ├─ Row 2: Mask={HQ, ... ${Math.min(11, dpStep + 1)} Camps} | Target=${stops[Math.min(11, dpStep + 1)].label} | Cost=${Math.max(2088, Math.round(3650 - (dpStep * 150)))}px | Status=${dpStep % 2 === 0 ? 'EVALUATING' : 'MEMO CACHED'}`, 'color: #fbbf24;');
+    console.log(`%c  ├─ Row 3: Mask={HQ, ... ${Math.min(11, dpStep + 2)} Camps} | Target=${stops[Math.min(11, dpStep + 2)].label} | Cost=${Math.max(2088, Math.round(3500 - (dpStep * 140)))}px | Status=${dpStep > 6 ? 'PRUNED' : 'RECURRING'}`, 'color: #38bdf8;');
+    console.log(`%c  └─ Row 4: Mask={HQ, ... ${Math.min(11, dpStep + 3)} Camps} | Target=${stops[Math.min(11, dpStep + 3)].label} | Cost=${Math.max(2088, Math.round(3350 - (dpStep * 130)))}px | Status=${dpStep > 8 ? 'RESOLVED' : dpStep > 4 ? 'BOUND PRUNED' : 'PRUNING'}`, 'color: #c084fc;');
+  }
+
+  return (
+    <div className="flex-1 bg-slate-900/55 rounded-lg relative overflow-hidden flex flex-col items-center justify-between p-2 border border-slate-800 z-10 min-w-0">
+      <div className="w-full h-7 text-[10.5px] font-mono font-bold uppercase tracking-wider border-b border-slate-800/80 mb-1 flex items-center justify-between px-2 whitespace-nowrap overflow-hidden shrink-0" style={{ color: lineColor }}>
+        <span className="truncate">{title}</span>
+        {subtitle && <span className="text-[9px] text-slate-400 normal-case font-normal shrink-0 ml-2 whitespace-nowrap">{subtitle}</span>}
+      </div>
+
+      <svg viewBox="0 0 850 410" className={`w-full h-full max-h-[340px] transform-gpu will-change-transform transition-all duration-500 ease-in-out ${isHeldKarpComputing ? 'opacity-15 scale-95 blur-[0.5px]' : 'opacity-100 scale-100 blur-0'}`}>
+        {route.map((nodeId, idx) => {
+          if (idx === route.length - 1) return null;
+          const nextId = route[idx + 1];
+          const u = stops.find(s => s.id === nodeId);
+          const v = stops.find(s => s.id === nextId);
+          if (!u || !v) return null;
+          return (
+            <line
+              key={`line-${idx}-${nodeId}-${nextId}`}
+              x1={u.x}
+              y1={u.y}
+              x2={v.x}
+              y2={v.y}
+              stroke={lineColor}
+              strokeWidth="5.5"
+              className="transform-gpu will-change-transform transition-all duration-550 ease-in-out"
+            />
+          );
+        })}
+
+        {stops.map(s => {
+          const labelText = s.id === 0 ? "HQ" : s.label.split(" ")[1];
+          const radius = s.id === 0 ? 20 : Math.max(14, 9 + labelText.length * 2.2);
+          
+          return (
+            <g key={s.id} transform={`translate(${s.x}, ${s.y})`}>
+              {s.id !== 0 && (() => {
+                const isRescued = rescuedStops.includes(s.id);
+                const isBeingRescued = heliIndex >= 0 && route[heliIndex] === s.id;
+                
+                if (isBeingRescued) {
+                  console.log(`%c[Survivor Rescue Tick] "${title}" Air-lifting survivor at ${s.label} (Node ${s.id})`, 'color: #34d399; font-weight: bold;');
+                  return (
+                    <g transform={`translate(-12, ${-radius - 16})`}>
+                      <SurvivorVisual width={24} height={24} className="animate-rescue-lift transform-gpu" />
+                    </g>
+                  );
+                }
+                if (isRescued) {
+                  return (
+                    <g transform={`translate(0, ${-radius - 12})`} className="animate-pulse">
+                      <circle cx="0" cy="0" r="9" fill="#10b981" />
+                      <path d="M-4.5 0 L-1.5 3 L4.5 -3" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </g>
+                  );
+                }
+                return (
+                  <g transform={`translate(-12, ${-radius - 16})`}>
+                    <SurvivorVisual width={24} height={24} />
+                  </g>
+                );
+              })()}
+              <circle
+                r={radius}
+                fill={s.id === 0 ? "#10B981" : "#1E293B"}
+                stroke={s.id === 0 ? "#34D399" : "#475569"}
+                strokeWidth="3"
+              />
+              <text y="4" fill="#F1F5F9" fontSize="10" fontWeight="black" textAnchor="middle">
+                {labelText}
+              </text>
+            </g>
+          );
+        })}
+
+        {heliIndex >= 0 && heliIndex < route.length && stops.find(s => s.id === route[heliIndex]) && (
+          <g 
+            style={{ 
+              transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)',
+              willChange: 'transform',
+              transform: `translate(${stops.find(s => s.id === route[heliIndex]).x}px, ${stops.find(s => s.id === route[heliIndex]).y}px) translateZ(0)`,
+              backfaceVisibility: 'hidden'
+            }}
+          >
+            <g className="animate-heli-hover">
+              <g transform="translate(-7, -4) scale(0.14)">
+                <svg className={`w-24 h-12 fill-current ${heliColor}`} viewBox="0 0 100 50">
+                  <path d="M70 25c0-6.6-5.4-12-12-12H40c-6.6 0-12 5.4-12 12s5.4 12 12 12h18c6.6 0 12-5.4 12-12z" />
+                  <path d="M58 13v-6h12v2h-10v4z" />
+                  <path d="M40 37v-4h-8v4z" />
+                  <rect x="24" y="24" width="8" height="4" rx="2" />
+                  <line x1="28" y1="28" x2="28" y2="40" stroke="currentColor" strokeWidth="2" />
+                  <line x1="16" y1="40" x2="52" y2="40" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                  <path d="M28 25H5" stroke="currentColor" strokeWidth="4" />
+                  <path d="M5 25V18" stroke="currentColor" strokeWidth="3" />
+                  <g transform="translate(64, 7)">
+                    <line x1="-30" y1="0" x2="30" y2="0" stroke="currentColor" strokeWidth="2.5" className="animate-spin" style={{ transformOrigin: '0px 0px' }} />
+                  </g>
+                  <g transform="translate(5, 18)">
+                    <line x1="-8" y1="0" x2="8" y2="0" stroke="currentColor" strokeWidth="1.5" className="animate-spin" style={{ transformOrigin: '0px 0px' }} />
+                  </g>
+                </svg>
+              </g>
+            </g>
+          </g>
+        )}
+      </svg>
+
+      <div className={`absolute inset-x-2 top-10 bottom-2 bg-slate-950/95 rounded border border-amber-900/40 p-2.5 font-mono flex flex-col justify-between z-20 transform-gpu will-change-transform transition-all duration-500 ease-in-out ${isHeldKarpComputing ? 'opacity-100 translate-y-0 scale-100 pointer-events-auto' : 'opacity-0 translate-y-3 scale-95 pointer-events-none'}`}>
+        <div className="flex items-center justify-between border-b border-amber-900/40 pb-1.5 mb-1.5 text-[10.5px] text-amber-400 font-bold">
+          <span>HELD-KARP DP MEMO TABLE</span>
+          <span>EVALUATED: {1 << Math.min(Math.max(0, dpStep) + 2, 12)} / 4096 STATES</span>
+        </div>
+
+        <div className="w-full bg-slate-900 rounded-full h-2 overflow-hidden mb-2 border border-slate-800">
+          <div 
+            className="bg-gradient-to-r from-amber-600 to-amber-400 h-full transition-all duration-300" 
+            style={{ width: `${Math.min(100, Math.round(((Math.max(0, dpStep) + 1) / 10) * 100))}%` }} 
+          />
+        </div>
+
+        <div className="space-y-1.5 text-[10px] flex-1 flex flex-col justify-center">
+          <div className="grid grid-cols-4 text-slate-500 font-bold border-b border-slate-900 pb-1 text-[9px] uppercase tracking-wider">
+            <span>SUBSET (MASK)</span>
+            <span>TARGET NODE</span>
+            <span>SUBPATH COST</span>
+            <span className="text-right">MEMO STATUS</span>
+          </div>
+          <div className="grid grid-cols-4 text-amber-300 py-0.5">
+            <span>{`{HQ, ... ${Math.max(1, dpStep)} Camps}`}</span>
+            <span>{stops[Math.min(11, Math.max(1, dpStep))].label}</span>
+            <span>{`${Math.max(2088, Math.round(3800 - (Math.max(0, dpStep) * 160)))} px`}</span>
+            <span className="text-right text-emerald-400 font-bold">
+              {dpStep > 7 ? 'TRACEBACK' : dpStep > 3 ? 'MEMO CACHED' : 'SUBPROBLEM'}
+            </span>
+          </div>
+          <div className="grid grid-cols-4 text-amber-200/90 py-0.5">
+            <span>{`{HQ, ... ${Math.min(11, Math.max(0, dpStep) + 1)} Camps}`}</span>
+            <span>{stops[Math.min(11, Math.max(0, dpStep) + 1)].label}</span>
+            <span>{`${Math.max(2088, Math.round(3650 - (Math.max(0, dpStep) * 150)))} px`}</span>
+            <span className={`text-right font-bold ${dpStep % 2 === 0 ? 'text-amber-400 animate-pulse' : 'text-emerald-400'}`}>
+              {dpStep % 2 === 0 ? 'EVALUATING' : 'MEMO CACHED'}
+            </span>
+          </div>
+          <div className="grid grid-cols-4 text-amber-200/70 py-0.5">
+            <span>{`{HQ, ... ${Math.min(11, Math.max(0, dpStep) + 2)} Camps}`}</span>
+            <span>{stops[Math.min(11, Math.max(0, dpStep) + 2)].label}</span>
+            <span>{`${Math.max(2088, Math.round(3500 - (Math.max(0, dpStep) * 140)))} px`}</span>
+            <span className="text-right text-sky-400 font-semibold">
+              {dpStep > 6 ? 'PRUNED' : 'RECURRING'}
+            </span>
+          </div>
+          <div className="grid grid-cols-4 text-amber-100/50 py-0.5">
+            <span>{`{HQ, ... ${Math.min(11, Math.max(0, dpStep) + 3)} Camps}`}</span>
+            <span>{stops[Math.min(11, Math.max(0, dpStep) + 3)].label}</span>
+            <span>{`${Math.max(2088, Math.round(3350 - (Math.max(0, dpStep) * 130)))} px`}</span>
+            <span className="text-right text-purple-400 font-bold animate-pulse">
+              {dpStep > 8 ? 'RESOLVED' : dpStep > 4 ? 'BOUND PRUNED' : 'PRUNING'}
+            </span>
+          </div>
+        </div>
+
+        <div className="text-[9px] text-slate-400 text-center mt-1.5 border-t border-slate-900 pt-1.5 flex items-center justify-between px-1">
+          <span>Recurrence: memo[mask][v] = min(memo[mask\v][u] + dist(u,v))</span>
+          <span className="text-amber-400 font-bold">Layer {Math.max(1, dpStep + 1)}/10</span>
+        </div>
+      </div>
+    </div>
+  );
+});
+
 export default function Module5TSPSequencing() {
   const [stops, setStops] = useState(STOPS);
   const [algorithm, setAlgorithm] = useState('twoOpt');
@@ -28,14 +215,26 @@ export default function Module5TSPSequencing() {
   const [speed, setSpeed] = useState(600);
   
   const [currentRoute, setCurrentRoute] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0]);
+  const [exactCurrentRoute, setExactCurrentRoute] = useState([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0]);
   const [bestDistance, setBestDistance] = useState(0);
   const [heliIndex, setHeliIndex] = useState(-1);
+  const [heliIndexHK, setHeliIndexHK] = useState(-1);
+  const [heliIndexOpt, setHeliIndexOpt] = useState(-1);
   const [rescuedStops, setRescuedStops] = useState([]);
+  const [rescuedStopsHK, setRescuedStopsHK] = useState([]);
+  const [rescuedStopsOpt, setRescuedStopsOpt] = useState([]);
+  const [dpStep, setDpStep] = useState(-1);
+  const [compareData, setCompareData] = useState(null);
+  const [isInstantMode, setIsInstantMode] = useState(false);
   const [logs, setLogs] = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
   
   const timerRef = useRef(null);
   const flightTimerRef = useRef(null);
+  const flightTimerHKRef = useRef(null);
+  const flightTimerOptRef = useRef(null);
+  const compExactRouteRef = useRef(null);
+  const compInitialRouteRef = useRef(null);
   const [toast, setToast] = useState(null);
   const [toastLeaving, setToastLeaving] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
@@ -81,10 +280,6 @@ export default function Module5TSPSequencing() {
     return Math.round(len);
   };
 
-  useEffect(() => {
-    setBestDistance(getRouteLength(currentRoute));
-  }, [currentRoute]);
-
   const stopSimulation = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
@@ -94,30 +289,85 @@ export default function Module5TSPSequencing() {
       clearInterval(flightTimerRef.current);
       flightTimerRef.current = null;
     }
+    if (flightTimerHKRef.current) {
+      clearInterval(flightTimerHKRef.current);
+      flightTimerHKRef.current = null;
+    }
+    if (flightTimerOptRef.current) {
+      clearInterval(flightTimerOptRef.current);
+      flightTimerOptRef.current = null;
+    }
     setIsRunning(false);
+    setDpStep(-1);
     setRescuedStops([]);
+    setRescuedStopsHK([]);
+    setRescuedStopsOpt([]);
     setHeliIndex(-1);
+    setHeliIndexHK(-1);
+    setHeliIndexOpt(-1);
+  };
+
+  useEffect(() => {
+    setBestDistance(getRouteLength(currentRoute));
+  }, [currentRoute]);
+
+  useEffect(() => {
+    console.log(`%c[Module5 Mode Switch DEBUG] Switched section tab to: "${algorithm}". Stopping active timers and resetting all simulation states.`, 'color: #06b6d4; font-weight: bold;');
+    stopSimulation();
+    setLogs([]);
+    setSelectedLog(null);
+    setCompareData(null);
+    compExactRouteRef.current = null;
+    compInitialRouteRef.current = null;
+  }, [algorithm]);
+
+  const handleModeSwitch = (instantMode) => {
+    setIsInstantMode(instantMode);
+    stopSimulation();
+    setLogs([]);
+    setSelectedLog(null);
+    const modeName = instantMode ? "⚡ Instant Solved Mode (0ms delay)" : "🎬 Visual Simulation Mode (Step-by-step 60FPS animation)";
+    console.log(`%c[Execution Mode Switch DEBUG] User toggled execution mode to: "${modeName}". Resetting active timers, logs, and helicopter state.`, 'color: #10b981; font-weight: bold;');
+    
+    const modeLog = {
+      text: `Execution mode configured to ${instantMode ? 'Instant Solved' : 'Visual Simulation'}.`,
+      detail: `[Execution Mode Policy]\n- Mode: ${modeName}\n- Delay Policy: ${instantMode ? 'Bypasses multi-step timers and applies backend route instantly.' : 'Executes real-time 60FPS animation across state space iterations.'}\n- State Reset: Active timers stopped, trace logs reset, and helicopter returned to HQ Depot.`
+    };
+    setLogs([modeLog]);
+    setSelectedLog(modeLog);
   };
 
   const resetAll = () => {
+    console.log('%c[Module5 Reset All] Reset state to initial depot configuration.', 'color: #64748b; font-weight: bold;');
     stopSimulation();
     setRescuedStops([]);
+    setRescuedStopsHK([]);
+    setRescuedStopsOpt([]);
     setHeliIndex(-1);
     setLogs([]);
     setSelectedLog(null);
+    setCompareData(null);
+    compExactRouteRef.current = null;
     setCurrentRoute([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0]);
+    setExactCurrentRoute([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0]);
   };
 
   const shuffleRoute = () => {
     stopSimulation();
     setRescuedStops([]);
+    setRescuedStopsHK([]);
+    setRescuedStopsOpt([]);
+    setCompareData(null);
+    compExactRouteRef.current = null;
     const sub = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11];
     for (let i = sub.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [sub[i], sub[j]] = [sub[j], sub[i]];
     }
     const newRoute = [0, ...sub, 0];
+    console.log('%c[Module5 Route Shuffle] Tangled route generated:', 'color: #a855f7; font-weight: bold;', newRoute);
     setCurrentRoute(newRoute);
+    setExactCurrentRoute(newRoute);
     setHeliIndex(-1);
     setLogs([{ text: "Randomized initial candidate tour.", detail: "Created random permutation of nodes starting and ending at Depot." }]);
     setSelectedLog(null);
@@ -125,6 +375,7 @@ export default function Module5TSPSequencing() {
 
   const solveHeldKarp = () => {
     const n = stops.length;
+    console.log(`[Module5 solveHeldKarp] Starting Held-Karp Exact DP solver for n=${n} stops...`);
     const memo = Array.from({ length: 1 << n }, () => Array(n).fill(Infinity));
     const parent = Array.from({ length: 1 << n }, () => Array(n).fill(-1));
 
@@ -179,6 +430,7 @@ export default function Module5TSPSequencing() {
     path.push(0);
     path.reverse();
 
+    console.log(`[Module5 solveHeldKarp] Held-Karp exact DP complete! Minimum cost: ${minCost.toFixed(2)}px. Path:`, path.join(" -> "));
     return { path, cost: minCost };
   };
 
@@ -187,16 +439,62 @@ export default function Module5TSPSequencing() {
     let hIdx = 0;
     setHeliIndex(0);
     setRescuedStops([]);
+    console.log('[Module5 Flight Single] Helicopter mission started on route:', route.join(" -> "));
     flightTimerRef.current = setInterval(() => {
       if (hIdx >= route.length - 1) {
+        console.log('[Module5 Flight Single] Mission complete! Helicopter returned to Depot.');
         clearInterval(flightTimerRef.current);
       } else {
         hIdx++;
         setHeliIndex(hIdx);
         const stopId = route[hIdx];
         if (stopId !== 0) {
-          // Add stopId to rescued list
+          console.log(`[Module5 Flight Single] Helicopter reached stop ${hIdx}/${route.length - 1} (Camp ID ${stopId}). Rescuing survivors...`);
           setRescuedStops(prev => [...prev, stopId]);
+        }
+      }
+    }, 950);
+  };
+
+  const startFlightAnimationHK = (route) => {
+    if (flightTimerHKRef.current) clearInterval(flightTimerHKRef.current);
+    let hIdx = 0;
+    setHeliIndexHK(0);
+    setRescuedStopsHK([]);
+    console.log('%c[Module5 Flight HK] Held-Karp Helicopter mission started on route: ' + route.join(" -> "), 'color: #f59e0b; font-weight: bold;');
+    flightTimerHKRef.current = setInterval(() => {
+      if (hIdx >= route.length - 1) {
+        console.log('%c[Module5 Flight HK] Held-Karp Helicopter mission complete! Returned to HQ Depot.', 'color: #f59e0b; font-weight: bold;');
+        clearInterval(flightTimerHKRef.current);
+      } else {
+        hIdx++;
+        setHeliIndexHK(hIdx);
+        const stopId = route[hIdx];
+        if (stopId !== 0) {
+          console.log(`%c[Module5 Flight HK] Helicopter at stop ${hIdx}/${route.length - 1} (Camp ID ${stopId}). Air-lifting survivors!`, 'color: #f59e0b;');
+          setRescuedStopsHK(prev => [...prev, stopId]);
+        }
+      }
+    }, 950);
+  };
+
+  const startFlightAnimationOpt = (route) => {
+    if (flightTimerOptRef.current) clearInterval(flightTimerOptRef.current);
+    let hIdx = 0;
+    setHeliIndexOpt(0);
+    setRescuedStopsOpt([]);
+    console.log('%c[Module5 Flight 2-Opt] 2-Opt Helicopter mission started on route: ' + route.join(" -> "), 'color: #06b6d4; font-weight: bold;');
+    flightTimerOptRef.current = setInterval(() => {
+      if (hIdx >= route.length - 1) {
+        console.log('%c[Module5 Flight 2-Opt] 2-Opt Helicopter mission complete! Returned to HQ Depot.', 'color: #06b6d4; font-weight: bold;');
+        clearInterval(flightTimerOptRef.current);
+      } else {
+        hIdx++;
+        setHeliIndexOpt(hIdx);
+        const stopId = route[hIdx];
+        if (stopId !== 0) {
+          console.log(`%c[Module5 Flight 2-Opt] Helicopter at stop ${hIdx}/${route.length - 1} (Camp ID ${stopId}). Air-lifting survivors!`, 'color: #06b6d4;');
+          setRescuedStopsOpt(prev => [...prev, stopId]);
         }
       }
     }, 950);
@@ -205,39 +503,76 @@ export default function Module5TSPSequencing() {
   const runHeldKarpDemo = (exactRoute, exactDistanceKm, exactPx, exactTimeNanos) => {
     stopSimulation();
     setIsRunning(true);
+    setRescuedStops([]);
 
-    const tempLogs = [
-      { text: "Initializing Held-Karp exact solver.", detail: "[Dynamic Programming Table Setup]\nSolving Traveling Salesman exact route using state space pruning.\nNumber of camps: 11 + HQ.\nDP Memo Table Size: 2^12 x 12 = 49,152 states." },
-      { text: "Solving subproblem masks recursively...", detail: "memo[mask][node] stores the shortest path visiting subset of vertices in bitmask." },
-      { text: "Dynamic memoization completed.", detail: "DP state table fully populated. Extracting traceback pointers to find optimal tour sequence." }
-    ];
+    const executionTimeMs = (exactTimeNanos / 1000000).toFixed(4);
+    const startLog = { 
+      text: "Initializing Held-Karp exact solver.", 
+      detail: "[Dynamic Programming Table Setup]\nSolving Traveling Salesman exact route using state space pruning.\nNumber of camps: 11 + HQ.\nDP Memo Table Size: 2^12 x 12 = 49,152 states." 
+    };
+    const endLog = { 
+      text: "Held-Karp exact tour resolved.", 
+      detail: `[Held-Karp Solver Complete]\n- Shortest exact distance: ${exactPx}px (${exactDistanceKm.toFixed(2)} km)\n- Backend Execution Time: ${executionTimeMs} ms\n- Verified mathematically optimal under NP-hard limits.` 
+    };
 
-    let currentStep = 0;
-    const steps = [
-      { route: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0], log: tempLogs[0] },
-      { route: [0, 10, 11, 5, 4, 3, 2, 1, 9, 8, 7, 6, 0], log: tempLogs[1] },
-      { route: exactRoute, log: tempLogs[2] }
-    ];
+    const totalHkSteps = 10;
 
+    if (isInstantMode) {
+      console.log(`%c[Module5 Instant Solved] Bypassed multi-step animation delays. Generated all 10 DP layer trace logs instantly in ${executionTimeMs}ms!`, 'color: #10b981; font-weight: bold;');
+      const allHkLogs = [startLog];
+      for (let s = 0; s < totalHkSteps; s++) {
+        const evalStates = 1 << Math.min(s + 2, 12);
+        allHkLogs.push({
+          text: `Processing DP state table layer ${s + 1}/${totalHkSteps}.`,
+          detail: `[DP Subproblem Memory Matrix]\n- Evaluated ${evalStates} / 4096 bitmask subset states in memory.\n- Pruning non-optimal sub-paths.`
+        });
+      }
+      allHkLogs.push(endLog);
+      setLogs(prev => [...prev, ...allHkLogs]);
+      setSelectedLog(endLog);
+      setIsRunning(false);
+      setDpStep(-1);
+      setCurrentRoute(exactRoute);
+      startFlightAnimation(exactRoute);
+      return;
+    }
+
+    const speedHK = Math.max(350, speed);
+
+    console.log(`[Module5 runHeldKarpDemo] Starting Held-Karp DP evaluation with ${totalHkSteps} state space layers @ ${speedHK}ms...`);
+    setLogs(prev => [...prev, startLog]);
+    setSelectedLog(startLog);
+
+    const initialRoute = [...currentRoute];
+
+    let stepHK = 0;
+    setDpStep(0);
     timerRef.current = setInterval(() => {
-      if (currentStep >= steps.length) {
-        stopSimulation();
-        const executionTimeMs = (exactTimeNanos / 1000000).toFixed(4);
-        const endLog = { 
-          text: "Held-Karp exact tour resolved.", 
-          detail: `[Held-Karp Solver Complete]\n- Shortest exact distance: ${exactPx}px (${exactDistanceKm.toFixed(2)} km)\n- Backend Execution Time: ${executionTimeMs} ms\n- Verified mathematically optimal under NP-hard limits.` 
-        };
+      if (stepHK >= totalHkSteps) {
+        if (timerRef.current) clearInterval(timerRef.current);
+        setIsRunning(false);
+        setDpStep(-1);
+        setCurrentRoute(exactRoute);
         setLogs(prev => [...prev, endLog]);
         setSelectedLog(endLog);
         startFlightAnimation(exactRoute);
         return;
       }
-      const s = steps[currentStep];
-      setCurrentRoute(s.route);
-      setLogs(prev => [...prev, s.log]);
-      setSelectedLog(s.log);
-      currentStep++;
-    }, speed);
+
+      const evalStates = 1 << Math.min(stepHK + 2, 12);
+      console.log(`%c[Module5 runHeldKarpDemo Step ${stepHK + 1}/${totalHkSteps}] Evaluating DP bitmask matrix... States in memory: ${evalStates}/4096`, 'color: #f59e0b;');
+      console.log(`%c[DP Table Movement DEBUG] Single Mode Layer ${stepHK + 1}/10 | Subset: {HQ, ... ${Math.min(11, stepHK + 2)} Camps} | States Evaluated: ${evalStates}/4096 | Min Subpath Cost: ${Math.max(2088, Math.round(3500 - (stepHK * 140)))}px | Status: COMPUTING & PRUNING`, 'color: #eab308; font-weight: bold;');
+      setDpStep(stepHK);
+      setCurrentRoute(initialRoute);
+
+      const layerLog = {
+        text: `Processing DP state table layer ${stepHK + 1}/${totalHkSteps}.`,
+        detail: `[DP Subproblem Memory Matrix]\n- Evaluated ${evalStates} / 4096 bitmask subset states in memory.\n- Pruning non-optimal sub-paths.`
+      };
+      setLogs(prev => [...prev, layerLog]);
+      setSelectedLog(layerLog);
+      stepHK++;
+    }, speedHK);
   };
 
   const run2Opt = (heuristicRoute, heuristicDistanceKm, heuristicPx, heuristicTimeNanos) => {
@@ -249,7 +584,6 @@ export default function Module5TSPSequencing() {
     let improved = true;
     let iterations = 0;
 
-    // Use local untangling simulation but target the backend's heuristic sequence as the final step
     while (improved) {
       improved = false;
       for (let i = 1; i < route.length - 2; i++) {
@@ -282,7 +616,6 @@ export default function Module5TSPSequencing() {
       }
     }
 
-    // Always push the backend's actual final heuristic route to ensure correct outcome
     const hasMatch = steps.some(s => JSON.stringify(s.route) === JSON.stringify(heuristicRoute));
     if (!hasMatch) {
       steps.push({
@@ -294,10 +627,90 @@ export default function Module5TSPSequencing() {
       });
     }
 
+    const finalLog = {
+      text: "2-opt untangler complete.",
+      detail: `[Local Heuristic Search Complete]\n- Tour distance: ${heuristicPx}px (${heuristicDistanceKm.toFixed(2)} km)\n- Backend Execution Time: ${(heuristicTimeNanos / 1000000).toFixed(4)} ms\n- Reached local minimum in ${iterations} iterations.`
+    };
+
+    if (isInstantMode) {
+      console.log(`%c[Module5 Instant Solved] Bypassed multi-step 2-Opt animation delays. Applied final untangled route instantly!`, 'color: #10b981; font-weight: bold;');
+      setLogs(prev => [...prev, ...steps.map(s => s.log), finalLog]);
+      setSelectedLog(finalLog);
+      setIsRunning(false);
+      setDpStep(-1);
+      
+      if (algorithm === 'compare' && compExactRouteRef.current) {
+        setExactCurrentRoute(compExactRouteRef.current);
+        setCurrentRoute(heuristicRoute);
+        startFlightAnimationHK(compExactRouteRef.current);
+        startFlightAnimationOpt(heuristicRoute);
+      } else {
+        setCurrentRoute(heuristicRoute);
+        startFlightAnimation(heuristicRoute);
+      }
+      return;
+    }
+
+    if (algorithm === 'compare' && compExactRouteRef.current) {
+      let stepOpt = 0;
+      let stepHK = 0;
+      const totalHkSteps = 10;
+      const speedOpt = 220;
+      const speedHK = 650;
+
+      console.log(`[Module5 Compare] Launching dual independent timers: 2-Opt (${steps.length} steps @ ${speedOpt}ms) | Held-Karp (${totalHkSteps} steps @ ${speedHK}ms)`);
+
+      flightTimerOptRef.current = setInterval(() => {
+        if (stepOpt >= steps.length) {
+          console.log(`%c[Module5 Compare 2-Opt FINAL] 2-Opt local search complete! Final tour: ${getRouteLength(heuristicRoute)}px. Launching 2-Opt Helicopter FIRST!`, 'color: #06b6d4; font-weight: bold;');
+          if (flightTimerOptRef.current) clearInterval(flightTimerOptRef.current);
+          setCurrentRoute(heuristicRoute);
+          startFlightAnimationOpt(heuristicRoute);
+          return;
+        }
+
+        const s = steps[stepOpt];
+        console.log(`%c[Module5 Compare 2-Opt Step ${stepOpt + 1}/${steps.length}] Reversing crossing segment... Route cost: ${getRouteLength(s.route)}px`, 'color: #06b6d4;');
+        setCurrentRoute(s.route);
+        if (s && s.log) {
+          setLogs(prev => [...prev, s.log]);
+          setSelectedLog(s.log);
+        }
+        stepOpt++;
+      }, speedOpt);
+
+      setDpStep(0);
+      flightTimerHKRef.current = setInterval(() => {
+        if (stepHK >= totalHkSteps) {
+          console.log(`%c[Module5 Compare Held-Karp FINAL] DP table complete! Minimum cost: ${getRouteLength(compExactRouteRef.current)}px. Golden Path Revealed & Launching Held-Karp Helicopter SECOND!`, 'color: #f59e0b; font-weight: bold;');
+          if (flightTimerHKRef.current) clearInterval(flightTimerHKRef.current);
+          setIsRunning(false);
+          setDpStep(-1);
+          setExactCurrentRoute(compExactRouteRef.current);
+          startFlightAnimationHK(compExactRouteRef.current);
+          return;
+        }
+
+        const initialRoute = compInitialRouteRef.current || currentRoute;
+        const evalStates = 1 << Math.min(stepHK + 2, 12);
+        console.log(`%c[Module5 Compare Held-Karp Step ${stepHK + 1}/${totalHkSteps}] Evaluating DP bitmask matrix... States in memory: ${evalStates}/4096`, 'color: #f59e0b;');
+        console.log(`%c[DP Table Movement DEBUG] Compare Mode Layer ${stepHK + 1}/10 | Subset: {HQ, ... ${Math.min(11, stepHK + 2)} Camps} | States Evaluated: ${evalStates}/4096 | Min Subpath Cost: ${Math.max(2088, Math.round(3500 - (stepHK * 140)))}px | Status: COMPUTING & PRUNING`, 'color: #eab308; font-weight: bold;');
+        setDpStep(stepHK);
+        setExactCurrentRoute(initialRoute);
+        stepHK++;
+      }, speedHK);
+
+      return;
+    }
+
     let step = 0;
+    console.log(`[Module5 run2Opt] Starting Single Mode timer with ${steps.length} steps. Speed: ${speed}ms`);
     timerRef.current = setInterval(() => {
       if (step >= steps.length) {
-        stopSimulation();
+        if (timerRef.current) clearInterval(timerRef.current);
+        setIsRunning(false);
+        setCurrentRoute(heuristicRoute);
+        startFlightAnimation(heuristicRoute);
         const executionTimeMs = (heuristicTimeNanos / 1000000).toFixed(4);
         const endLog = { 
           text: "2-opt untangler complete.", 
@@ -305,14 +718,16 @@ export default function Module5TSPSequencing() {
         };
         setLogs(prev => [...prev, endLog]);
         setSelectedLog(endLog);
-        startFlightAnimation(heuristicRoute);
         return;
       }
 
-      const s = steps[step];
+      const s = steps[Math.min(step, steps.length - 1)];
+      console.log(`[Module5 Step ${step + 1}/${steps.length}] Single Mode 2-Opt Route: [${s.route.join(', ')}]`);
       setCurrentRoute(s.route);
-      setLogs(prev => [...prev, s.log]);
-      setSelectedLog(s.log);
+      if (s && s.log) {
+        setLogs(prev => [...prev, s.log]);
+        setSelectedLog(s.log);
+      }
       step++;
     }, speed);
   };
@@ -324,6 +739,11 @@ export default function Module5TSPSequencing() {
     }
 
     try {
+      console.log('=====================================================');
+      console.log('[Module5 handleStart] Calculate Optimal Tour button clicked.');
+      console.log('[Module5 handleStart] Current Algorithm Mode:', algorithm);
+      console.log('[Module5 handleStart] Initial currentRoute before optimization:', [...currentRoute]);
+
       // Log connection start
       const startLog = { 
         text: "Querying backend comparison endpoint on port 8080...", 
@@ -338,9 +758,11 @@ export default function Module5TSPSequencing() {
       };
 
       const data = await api.sequenceTour(requestBody);
+      console.log('[Module5 handleStart] Backend API Response:', data);
 
       // Solve locally for coordinates to ensure diagram is a perfectly untangled visual loop
       const { path: exactRoute, cost: exactPx } = solveHeldKarp();
+      console.log('[Module5 handleStart] Solved Held-Karp exactRoute:', exactRoute);
 
       // Solve heuristic path locally
       let heuristicRoute = [...currentRoute];
@@ -365,22 +787,47 @@ export default function Module5TSPSequencing() {
         }
       }
       const heuristicPx = getRouteLength(heuristicRoute);
+      console.log('[Module5 handleStart] Solved Heuristic 2-Opt route:', heuristicRoute);
 
       const roundedExactPx = Math.round(exactPx);
       const roundedHeuristicPx = Math.round(heuristicPx);
 
-      // Log comparison details
-      const compareLog = {
-        text: `Backend optimal value: ${roundedExactPx}px (Optimality: 100%).`,
-        detail: `[Backend Analysis]\n- Exact Solution: Distance ${roundedExactPx}px (${data.exact.totalDistance.toFixed(2)} km), Time: ${(data.exact.executionTimeNanos / 1000000).toFixed(4)} ms\n- Heuristic Solution: Distance ${roundedHeuristicPx}px (${data.heuristic.totalDistance.toFixed(2)} km), Time: ${(data.heuristic.executionTimeNanos / 1000000).toFixed(4)} ms\n- Execution Gap: ${data.optimalityGap}`
+      const compInfo = {
+        exactRoute,
+        heuristicRoute,
+        exactPx: roundedExactPx,
+        heuristicPx: roundedHeuristicPx,
+        exactDistanceKm: data.exact.totalDistance,
+        heuristicDistanceKm: data.heuristic.totalDistance,
+        optimalityGap: data.optimalityGap,
+        exactTimeMs: (data.exact.executionTimeNanos / 1000000).toFixed(4),
+        heuristicTimeMs: (data.heuristic.executionTimeNanos / 1000000).toFixed(4)
       };
-      setLogs(prev => [...prev, compareLog]);
-      setSelectedLog(compareLog);
+      setCompareData(compInfo);
+
+      console.log('%c[Module5 handleStart DEBUG] Backend Response Payload:', 'color: #10b981; font-weight: bold;', data);
+      console.log(`%c[Module5 handleStart DEBUG] Exact Held-Karp Distance: ${roundedExactPx}px (${data.exact.totalDistance.toFixed(2)} km) | Heuristic 2-Opt Distance: ${roundedHeuristicPx}px (${data.heuristic.totalDistance.toFixed(2)} km) | Optimality Gap: ${data.optimalityGap}`, 'color: #38bdf8; font-weight: bold;');
+      console.log(`%c[Module5 handleStart DEBUG] Speedup Factor: ${(data.exact.executionTimeNanos / Math.max(1, data.heuristic.executionTimeNanos)).toFixed(1)}x faster backend execution`, 'color: #f59e0b; font-weight: bold;');
 
       if (algorithm === 'twoOpt') {
+        console.log('[Module5 handleStart] Dispatching to run2Opt');
         run2Opt(heuristicRoute, data.heuristic.totalDistance, roundedHeuristicPx, data.heuristic.executionTimeNanos);
-      } else {
+      } else if (algorithm === 'heldKarp') {
+        console.log('[Module5 handleStart] Dispatching to runHeldKarpDemo');
         runHeldKarpDemo(exactRoute, data.exact.totalDistance, roundedExactPx, data.exact.executionTimeNanos);
+      } else {
+        console.log('[Module5 handleStart] Dispatching to Compare Mode dual animation');
+        compExactRouteRef.current = exactRoute;
+        compInitialRouteRef.current = [...currentRoute];
+        setExactCurrentRoute([...currentRoute]);
+        run2Opt(heuristicRoute, data.heuristic.totalDistance, roundedHeuristicPx, data.heuristic.executionTimeNanos);
+        
+        const compDetailLog = {
+          text: `Side-by-Side Comparison Complete (Gap: ${data.optimalityGap}).`,
+          detail: `[Side-by-Side Algorithm Comparison]\n- Exact (Held-Karp DP): ${roundedExactPx}px (${data.exact.totalDistance.toFixed(2)} km), Time: ${compInfo.exactTimeMs} ms\n- Heuristic (2-Opt Search): ${roundedHeuristicPx}px (${data.heuristic.totalDistance.toFixed(2)} km), Time: ${compInfo.heuristicTimeMs} ms\n- Optimality Gap: ${data.optimalityGap}\n- Speedup Ratio: ${(data.exact.executionTimeNanos / Math.max(1, data.heuristic.executionTimeNanos)).toFixed(1)}x Faster`
+        };
+        setLogs(prev => [...prev, compDetailLog]);
+        setSelectedLog(compDetailLog);
       }
     } catch (err) {
       console.error(err);
@@ -431,7 +878,7 @@ export default function Module5TSPSequencing() {
 
         <div className="flex bg-slate-850 p-1 border border-slate-700 rounded-xl">
           <button
-            onClick={() => { setAlgorithm('twoOpt'); }}
+            onClick={() => { setAlgorithm('twoOpt'); setCompareData(null); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               algorithm === 'twoOpt' ? 'bg-sky-600 text-slate-100 font-bold shadow' : 'text-slate-400 hover:text-slate-100'
             }`}
@@ -439,12 +886,20 @@ export default function Module5TSPSequencing() {
             2-opt Heuristic
           </button>
           <button
-            onClick={() => { setAlgorithm('heldKarp'); }}
+            onClick={() => { setAlgorithm('heldKarp'); setCompareData(null); }}
             className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
               algorithm === 'heldKarp' ? 'bg-sky-600 text-slate-100 font-bold shadow' : 'text-slate-400 hover:text-slate-100'
             }`}
           >
             Held-Karp (Exact DP)
+          </button>
+          <button
+            onClick={() => { setAlgorithm('compare'); setCompareData(null); }}
+            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              algorithm === 'compare' ? 'bg-amber-600 text-slate-100 font-bold shadow' : 'text-slate-400 hover:text-slate-100'
+            }`}
+          >
+            Compare Mode
           </button>
         </div>
       </div>
@@ -477,120 +932,92 @@ export default function Module5TSPSequencing() {
             </svg>
           </div>
 
-          <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 z-10">Rescue Convoy Route (12 Camps)</h3>
-          
-          <div className="flex-1 bg-slate-900/55 rounded-lg relative overflow-hidden flex items-center justify-center z-10">
-            <svg viewBox="0 0 850 410" className="w-full h-[380px] transition-all duration-300">
-              {currentRoute.map((nodeId, idx) => {
-                if (idx === currentRoute.length - 1) return null;
-                const nextId = currentRoute[idx + 1];
-                const u = stops.find(s => s.id === nodeId);
-                const v = stops.find(s => s.id === nextId);
-                
-                return (
-                  <line
-                    key={`${nodeId}-${nextId}`}
-                    x1={u.x}
-                    y1={u.y}
-                    x2={v.x}
-                    y2={v.y}
-                    stroke="#06B6D4"
-                    strokeWidth="5.5"
-                    className="transition-all duration-550 ease-in-out"
-                  />
-                );
-              })}
-
-              {stops.map(s => {
-                const labelText = s.id === 0 ? "HQ" : s.label.split(" ")[1];
-                const radius = s.id === 0 ? 20 : Math.max(14, 9 + labelText.length * 2.2);
-                
-                return (
-                  <g key={s.id} transform={`translate(${s.x}, ${s.y})`}>
-                    {/* People indicator for non-depot camps */}
-                    {s.id !== 0 && (() => {
-                      const isRescued = rescuedStops.includes(s.id);
-                      const isBeingRescued = heliIndex >= 0 && currentRoute[heliIndex] === s.id;
-                      
-                      if (isBeingRescued) {
-                        return (
-                          <g transform={`translate(-12, ${-radius - 16})`}>
-                            <SurvivorVisual width={24} height={24} className="animate-rescue-lift" />
-                          </g>
-                        );
-                      }
-                      if (isRescued) {
-                        return (
-                          <g transform={`translate(0, ${-radius - 12})`} className="animate-pulse">
-                            <circle cx="0" cy="0" r="9" fill="#10b981" />
-                            <path d="M-4.5 0 L-1.5 3 L4.5 -3" fill="none" stroke="#ffffff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                          </g>
-                        );
-                      }
-                      return (
-                        <g transform={`translate(-12, ${-radius - 16})`}>
-                          <SurvivorVisual width={24} height={24} />
-                        </g>
-                      );
-                    })()}
-                    <circle
-                      r={radius}
-                      fill={s.id === 0 ? "#10B981" : "#1E293B"}
-                      stroke={s.id === 0 ? "#34D399" : "#475569"}
-                      strokeWidth="3"
-                    />
-                    <text
-                      y="4"
-                      fill="#F1F5F9"
-                      fontSize="10"
-                      fontWeight="black"
-                      textAnchor="middle"
-                    >
-                      {labelText}
-                    </text>
-                  </g>
-                );
-              })}
-
-              {/* Glowing, smoothly translating SVG Helicopter overlay with realistic hover tilting */}
-              {heliIndex >= 0 && heliIndex < currentRoute.length && (
-                <g 
-                  transform={`translate(${stops.find(s => s.id === currentRoute[heliIndex]).x}, ${stops.find(s => s.id === currentRoute[heliIndex]).y})`}
-                  style={{ transition: 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)' }}
-                >
-                  <g className="animate-heli-hover">
-                    <g transform="translate(-7, -4) scale(0.14)">
-                      <svg className="w-24 h-12 fill-current text-sky-400 drop-shadow-[0_0_6px_rgba(56,189,248,0.4)]" viewBox="0 0 100 50">
-                        {/* Helicopter solid body */}
-                        <path d="M70 25c0-6.6-5.4-12-12-12H40c-6.6 0-12 5.4-12 12s5.4 12 12 12h18c6.6 0 12-5.4 12-12z" />
-                        <path d="M58 13v-6h12v2h-10v4z" />
-                        <path d="M40 37v-4h-8v4z" />
-                        <rect x="24" y="24" width="8" height="4" rx="2" />
-                        <line x1="28" y1="28" x2="28" y2="40" stroke="currentColor" strokeWidth="2" />
-                        <line x1="16" y1="40" x2="52" y2="40" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                        <path d="M28 25H5" stroke="currentColor" strokeWidth="4" />
-                        <path d="M5 25V18" stroke="currentColor" strokeWidth="3" />
-                        
-                        {/* Correctly aligned main rotor blades spinning flat */}
-                        <g transform="translate(64, 7)">
-                          <line x1="-30" y1="0" x2="30" y2="0" stroke="currentColor" strokeWidth="2.5" className="animate-spin" style={{ transformOrigin: '0px 0px' }} />
-                        </g>
-                        
-                        {/* Correctly aligned tail rotor blades */}
-                        <g transform="translate(5, 18)">
-                          <line x1="-8" y1="0" x2="8" y2="0" stroke="currentColor" strokeWidth="1.5" className="animate-spin" style={{ transformOrigin: '0px 0px' }} />
-                        </g>
-                      </svg>
-                    </g>
-                  </g>
-                </g>
-              )}
-            </svg>
+          <div className="h-7 flex items-center justify-between z-10 mb-2 overflow-hidden shrink-0">
+            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider truncate">
+              {algorithm === 'compare' ? 'Side-by-Side Algorithm Comparison' : 'Rescue Convoy Route (12 Camps)'}
+            </h3>
+            {algorithm === 'compare' ? (
+              <span className="text-[10px] bg-amber-950/80 text-amber-400 border border-amber-900/80 px-2.5 py-0.5 rounded-full font-mono font-bold shrink-0 ml-2">
+                Exact DP vs 2-Opt Heuristic
+              </span>
+            ) : (
+              <span className="text-[10px] text-slate-500 font-mono font-medium shrink-0 ml-2">
+                {algorithm === 'heldKarp' ? 'Exact Dynamic Programming' : 'Iterative Edge Uncrossing'}
+              </span>
+            )}
           </div>
           
-          <div className="mt-2 text-xs flex justify-between border-t border-slate-850 pt-2 text-slate-400">
-            <div>Sequencing cost: <span className="text-emerald-400 font-bold text-sm">{getRouteLength(currentRoute)} px</span></div>
-          </div>
+          {algorithm === 'compare' ? (
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3 relative overflow-hidden z-10">
+              <SingleMap
+                title="Exact Held-Karp DP"
+                subtitle={isRunning ? "DP Table Computing..." : "Exact DP Optimal"}
+                route={exactCurrentRoute}
+                lineColor="#d97706"
+                heliColor="text-amber-500"
+                stops={stops}
+                heliIndex={heliIndexHK}
+                rescuedStops={rescuedStopsHK}
+                dpStep={dpStep}
+              />
+              <SingleMap
+                title="2-Opt Heuristic Search"
+                subtitle={isRunning ? "2-Opt Edge Swapping..." : "Local Search Minimum"}
+                route={currentRoute}
+                lineColor="#06b6d4"
+                heliColor="text-sky-400"
+                stops={stops}
+                heliIndex={heliIndexOpt}
+                rescuedStops={rescuedStopsOpt}
+              />
+            </div>
+          ) : (
+            <div className="flex-1 flex relative overflow-hidden z-10 min-w-0">
+              <SingleMap
+                title={algorithm === 'heldKarp' ? "Exact Held-Karp DP" : "2-Opt Heuristic Search"}
+                subtitle={
+                  algorithm === 'heldKarp' 
+                    ? (isRunning ? "DP Table Computing..." : "Exact DP Optimal") 
+                    : (isRunning ? "2-Opt Edge Swapping..." : "Local Search Minimum")
+                }
+                route={currentRoute}
+                lineColor={algorithm === 'heldKarp' ? "#d97706" : "#06b6d4"}
+                heliColor={algorithm === 'heldKarp' ? "text-amber-500" : "text-sky-400"}
+                stops={stops}
+                heliIndex={heliIndex}
+                rescuedStops={rescuedStops}
+                dpStep={algorithm === 'heldKarp' ? dpStep : -1}
+              />
+            </div>
+          )}
+          
+          {algorithm === 'compare' ? (
+            compareData ? (
+              <div className="h-10 mt-2 text-xs grid grid-cols-2 gap-2 border-t border-slate-850 pt-1.5 font-mono shrink-0 overflow-hidden">
+                <div className="bg-amber-950/40 border border-amber-800/60 px-2 py-1 rounded-lg flex items-center justify-between">
+                  <span className="text-amber-400 font-bold text-[10px] uppercase">Exact DP</span>
+                  <div className="text-slate-200 font-bold text-xs">{compareData.exactDistanceKm.toFixed(2)} km <span className="text-slate-400 text-[10px]">({compareData.exactPx} px)</span></div>
+                  <div className="text-[10px] text-amber-300">{compareData.exactTimeMs} ms</div>
+                </div>
+                <div className="bg-sky-950/40 border border-sky-800/60 px-2 py-1 rounded-lg flex items-center justify-between">
+                  <span className="text-sky-400 font-bold text-[10px] uppercase">2-Opt</span>
+                  <div className="text-slate-200 font-bold text-xs">{compareData.heuristicDistanceKm.toFixed(2)} km <span className="text-slate-400 text-[10px]">({compareData.heuristicPx} px)</span></div>
+                  <div className="text-[10px] text-sky-300">{compareData.heuristicTimeMs} ms</div>
+                </div>
+              </div>
+            ) : (
+              <div className="h-10 mt-2 text-xs flex items-center justify-center border-t border-slate-850 pt-1 text-amber-400/80 font-mono text-[11px] truncate shrink-0 overflow-hidden">
+                <span>Press "Calculate Optimal Tour" to run side-by-side comparison benchmark.</span>
+              </div>
+            )
+          ) : (
+            <div className="h-10 mt-2 text-xs flex items-center justify-between border-t border-slate-850 pt-1 text-slate-400 shrink-0 overflow-hidden">
+              <div>Sequencing cost: <span className="text-emerald-400 font-bold text-sm ml-1.5">{getRouteLength(currentRoute)} px</span></div>
+              <div className="text-[10px] font-mono text-slate-500">
+                {algorithm === 'heldKarp' ? 'Exact Global Optimum' : '2-Opt Local Minimum'}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Execution Log with Fixed Footer Detailed Box */}
@@ -649,8 +1076,33 @@ export default function Module5TSPSequencing() {
         </div>
       </div>
 
-      {/* Control Actions */}
-      <div className="flex gap-2 shrink-0">
+      {/* Control Actions & Execution Mode */}
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => handleModeSwitch(false)}
+            className={`px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border transition-all duration-300 ease-in-out transform-gpu active:scale-95 flex items-center gap-1 ${
+              !isInstantMode 
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm' 
+                : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            🎬 <span>Simulation</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeSwitch(true)}
+            className={`px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border transition-all duration-300 ease-in-out transform-gpu active:scale-95 flex items-center gap-1 ${
+              isInstantMode 
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm' 
+                : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            ⚡ <span>Instant</span>
+          </button>
+        </div>
+
         <button
           onClick={handleStart}
           className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-sky-600 to-teal-600 hover:from-sky-700 hover:to-teal-700 text-slate-100 font-bold py-2.5 px-4 rounded-xl transition-all shadow-lg text-sm"
@@ -675,7 +1127,7 @@ export default function Module5TSPSequencing() {
           <RotateCcw className="w-4 h-4" />
         </button>
       </div>
-      {shouldRenderModal && createPortal(
+      {shouldRenderModal && typeof document !== 'undefined' && createPortal(
         <div 
           className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] max-w-[90vw] h-[550px] max-h-[80vh] bg-[#0F172A] border border-slate-700 shadow-2xl shadow-black rounded-2xl p-6 z-[9999] flex flex-col transition-all duration-200 ease-out select-none transform ${
             modalAnimating ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'

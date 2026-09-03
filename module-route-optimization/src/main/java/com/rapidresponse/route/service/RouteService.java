@@ -153,7 +153,9 @@ public class RouteService {
                 ? dijkstraPathfinder.findShortestPath(graph, request.sourceId(), request.targetId())
                 : aStarPathfinder.findShortestPath(graph, request.sourceId(), request.targetId());
 
-        List<String> names = result.getNodeSequence().stream()
+        List<String> names = (result.getNodeSequence() == null)
+                ? Collections.emptyList()
+                : result.getNodeSequence().stream()
                 .map(id -> {
                     Node node = graph.getNode(id);
                     return node == null ? String.valueOf(id) : node.getName();

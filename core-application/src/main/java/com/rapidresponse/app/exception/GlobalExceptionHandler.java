@@ -63,6 +63,17 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, ex.getStatusCode());
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex, WebRequest request) {
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.BAD_REQUEST.value(),
+                "Invalid Argument",
+                ex.getMessage(),
+                getPath(request)
+        );
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex, WebRequest request) {
         ErrorResponse errorResponse = new ErrorResponse(

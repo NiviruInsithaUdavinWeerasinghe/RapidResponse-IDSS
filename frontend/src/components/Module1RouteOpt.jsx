@@ -205,8 +205,8 @@ export default function Module1RouteOpt() {
       "1": { x: 100, y: 150 }, // Colombo HQ
       "2": { x: 630, y: 210 }, // Galle Rescue Camp (A) -> Shifted up further
       "3": { x: 770, y: 295 }, // Matara Rescue Camp (B) -> Shifted down
-      "4": { x: 810, y: 200 }, // Hambantota Camp (C)
-      "5": { x: 505, y: 215 }, // Ratnapura Junction (JA)
+      "4": { x: 810, y: 220 }, // Hambantota Camp (C) -> Lowered slightly
+      "5": { x: 485, y: 225 }, // Ratnapura Junction (JA) -> Shifted left & up
       "6": { x: 90, y: 350 },  // Camp Echo (D)
       "7": { x: 195, y: 360 }, // Camp Foxtrot (E)
       "8": { x: 600, y: 355 }, // Camp Golf (F)
@@ -217,7 +217,7 @@ export default function Module1RouteOpt() {
       "13": { x: 230, y: 120 }, // Camp Lima (K)
       "14": { x: 170, y: 150 }, // Junction - Maharagama (JB)
       "15": { x: 130, y: 215 }, // Junction - Piliyandala (JC) -> Shifted down
-      "16": { x: 280, y: 285 }, // Junction - Bandaragama (JD)
+      "16": { x: 240, y: 258 }, // Junction - Bandaragama (JD) -> Shifted to match Module 3
       "17": { x: 350, y: 345 }, // Junction - Dodangoda (JE)
       "18": { x: 480, y: 385 }, // Junction - Welipenna (JF) -> Shifted down
       "19": { x: 190, y: 75 },  // Junction - Kadawatha (JG)

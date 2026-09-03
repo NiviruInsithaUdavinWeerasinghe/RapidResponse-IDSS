@@ -17,6 +17,7 @@ export default function Module3NetworkAnalysis() {
   const [currentEdgeIndex, setCurrentEdgeIndex] = useState(-1);
   const [logs, setLogs] = useState([]);
   const [selectedLog, setSelectedLog] = useState(null);
+  const [isInstantMode, setIsInstantMode] = useState(false);
   const [cutOffCamps, setCutOffCamps] = useState([]);
   const [components, setComponents] = useState([]);
 
@@ -33,8 +34,8 @@ export default function Module3NetworkAnalysis() {
       "1": { x: 100, y: 150 }, // Colombo HQ
       "2": { x: 630, y: 210 }, // Galle Rescue Camp (A) -> Shifted up further
       "3": { x: 770, y: 295 }, // Matara Rescue Camp (B) -> Shifted down
-      "4": { x: 810, y: 200 }, // Hambantota Camp (C)
-      "5": { x: 505, y: 215 }, // Ratnapura Junction (JA)
+      "4": { x: 810, y: 220 }, // Hambantota Camp (C) -> Lowered slightly
+      "5": { x: 485, y: 225 }, // Ratnapura Junction (JA) -> Shifted left & up
       "6": { x: 90, y: 350 },  // Camp Echo (D)
       "7": { x: 195, y: 360 }, // Camp Foxtrot (E)
       "8": { x: 600, y: 355 }, // Camp Golf (F)
@@ -45,7 +46,7 @@ export default function Module3NetworkAnalysis() {
       "13": { x: 230, y: 120 }, // Camp Lima (K)
       "14": { x: 170, y: 150 }, // Junction - Maharagama (JB) -> Shifted up
       "15": { x: 130, y: 215 }, // Junction - Piliyandala (JC) -> Shifted down
-      "16": { x: 280, y: 285 }, // Junction - Bandaragama (JD)
+      "16": { x: 240, y: 258 }, // Junction - Bandaragama (JD) -> Shifted up
       "17": { x: 350, y: 345 }, // Junction - Dodangoda (JE)
       "18": { x: 480, y: 385 }, // Junction - Welipenna (JF) -> Shifted down
       "19": { x: 190, y: 75 },  // Junction - Kadawatha (JG)
@@ -134,7 +135,17 @@ export default function Module3NetworkAnalysis() {
     loadNetworkAndStatus();
   }, []);
 
-  const resetAll = async () => {
+  const resetAll = () => {
+    stopSimulation();
+    setMstEdges([]);
+    setMstResult(null);
+    setCurrentEdgeIndex(-1);
+    setLogs([]);
+    setSelectedLog(null);
+    showToast("Simulation visuals reset.");
+  };
+
+  const handleUnblockAllRoads = async () => {
     stopSimulation();
     setMstEdges([]);
     setMstResult(null);
@@ -143,8 +154,10 @@ export default function Module3NetworkAnalysis() {
     setSelectedLog(null);
     try {
       await api.resetEdges();
+      showToast("All road blocks cleared.");
     } catch (err) {
       console.error("Failed to reset database edge block statuses", err);
+      showToast("Error clearing road blocks.");
     }
     loadNetworkAndStatus(true);
   };
@@ -164,6 +177,25 @@ export default function Module3NetworkAnalysis() {
       console.error("Failed to toggle edge block state in database", err);
       showToast("Error updating road block status.");
     }
+  };
+
+  const handleModeSwitch = (instantMode) => {
+    setIsInstantMode(instantMode);
+    stopSimulation();
+    setMstEdges([]);
+    setMstResult(null);
+    setCurrentEdgeIndex(-1);
+    setLogs([]);
+    setSelectedLog(null);
+    const modeName = instantMode ? "⚡ Instant Solved Mode (0ms delay)" : "🎬 Visual Simulation Mode (Step-by-step 700ms animation)";
+    console.log(`%c[Execution Mode Switch DEBUG] User toggled execution mode to: "${modeName}". Resetting active timers, MST calculation lines, and logs.`, 'color: #10b981; font-weight: bold;');
+    
+    const modeLog = {
+      text: `Execution mode configured to ${instantMode ? 'Instant Solved' : 'Visual Simulation'}.`,
+      detail: `[Execution Mode Policy]\n- Mode: ${modeName}\n- Delay Policy: ${instantMode ? 'Bypasses step-by-step Kruskal edge timers and calculates optimal backbone instantly.' : 'Executes real-time 700ms animation across Union-Find disjoint sets.'}\n- State Reset: Active timers stopped, MST calculation lines cleared, and trace logs reset.`
+    };
+    setLogs([modeLog]);
+    setSelectedLog(modeLog);
   };
 
   const stopSimulation = () => {
@@ -278,6 +310,20 @@ export default function Module3NetworkAnalysis() {
           text: `Optimal active communication backbone established.`,
           detail: `[Final Active Backbone MST Output]\n- Total Links Selected: ${mstList.length}\n- Optimal Spanning Cost: ${currentMstCost.toFixed(2)} km\n- Component Status: All nodes spanned into a single cost-optimal network tree.`
         });
+      }
+
+      if (isInstantMode) {
+        console.log(`%c[Module3 Instant Solved] Bypassed Kruskal MST animation delays. Established optimal network backbone instantly!`, 'color: #10b981; font-weight: bold;');
+        const finalMst = steps.length > 0 ? (steps[steps.length - 1].mst || mstList) : mstList;
+        const allLogs = steps.map(s => ({ text: s.text, detail: s.detail }));
+        setMstEdges(finalMst);
+        setCurrentEdgeIndex(-1);
+        setLogs(prev => [...prev, ...allLogs]);
+        if (allLogs.length > 0) {
+          setSelectedLog(allLogs[allLogs.length - 1]);
+        }
+        setIsRunning(false);
+        return;
       }
 
       let step = 0;
@@ -486,7 +532,7 @@ export default function Module3NetworkAnalysis() {
                     <g 
                       key={s.id} 
                       transform={`translate(${coord.x}, ${coord.y})`}
-                      className="transition-transform duration-300 hover:scale-110 cursor-help"
+                      className="cursor-help"
                     >
                       {!isHq && s.nodeType !== 'INTERSECTION' && (
                         <g transform="translate(-11, -30)">
@@ -498,7 +544,7 @@ export default function Module3NetworkAnalysis() {
                         fill={isHq ? "#10B981" : isIsolated ? "#991B1B" : s.nodeType === 'INTERSECTION' ? "#475569" : "#1E293B"}
                         stroke={isHq ? "#34D399" : isIsolated ? "#F87171" : "#64748B"}
                         strokeWidth="2.5"
-                        className="transition-all duration-300"
+                        className="transition-all duration-200 hover:stroke-sky-400 hover:stroke-[3.5px]"
                       />
                       {s.nodeType === 'INTERSECTION' ? (
                         <text
@@ -598,8 +644,33 @@ export default function Module3NetworkAnalysis() {
         </div>
       )}
 
-      {/* Controls */}
-      <div className="flex gap-2 shrink-0">
+      {/* Controls & Execution Mode */}
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 rounded-xl p-1 shrink-0">
+          <button
+            type="button"
+            onClick={() => handleModeSwitch(false)}
+            className={`px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border transition-all duration-300 ease-in-out transform-gpu active:scale-95 flex items-center gap-1 ${
+              !isInstantMode 
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 shadow-sm' 
+                : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            🎬 <span>Simulation</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleModeSwitch(true)}
+            className={`px-2.5 py-1.5 text-xs font-mono font-bold rounded-lg border transition-all duration-300 ease-in-out transform-gpu active:scale-95 flex items-center gap-1 ${
+              isInstantMode 
+                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm' 
+                : 'bg-transparent text-slate-400 border-transparent hover:text-slate-200 hover:bg-slate-800/40'
+            }`}
+          >
+            ⚡ <span>Instant</span>
+          </button>
+        </div>
+
         <button
           onClick={runKruskal}
           disabled={loading || isRunning}
@@ -610,16 +681,25 @@ export default function Module3NetworkAnalysis() {
         </button>
         
         <button
+          onClick={handleUnblockAllRoads}
+          disabled={loading || isRunning || !edges.some(e => e.blocked)}
+          className="bg-slate-800 hover:bg-slate-700 text-amber-300 font-semibold px-3 py-2.5 rounded-xl border border-slate-700 transition-all text-xs flex items-center gap-1.5 shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+          title="Clear all road blocks in database"
+        >
+          <span>🔓</span> <span>Unblock All</span>
+        </button>
+
+        <button
           onClick={resetAll}
-          disabled={loading || isRunning}
+          disabled={loading}
           className="bg-slate-800 hover:bg-slate-700 text-slate-200 p-2.5 rounded-xl border border-slate-700 transition-all disabled:opacity-50"
-          title="Reset"
+          title="Reset Simulation Visuals"
         >
           <RotateCcw className="w-4 h-4" />
         </button>
       </div>
 
-      {shouldRenderModal && createPortal(
+      {shouldRenderModal && typeof document !== 'undefined' && createPortal(
         <div 
           className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] max-w-[90vw] h-[550px] max-h-[80vh] bg-[#0F172A] border border-slate-700 shadow-2xl shadow-black rounded-2xl p-6 z-[9999] flex flex-col transition-all duration-200 ease-out select-none transform ${
             modalAnimating ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none'
@@ -649,16 +729,40 @@ export default function Module3NetworkAnalysis() {
             <div>
               <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">What is this page for?</h4>
               <p className="leading-relaxed">
-                This module connects to the active database to analyze network connectivity, isolated camps, and components using <strong>Kruskal's MST</strong> with a <strong>Union-Find (Disjoint Set)</strong> algorithm on the backend.
+                This module analyzes network connectivity, isolated camps, and components using <strong>Kruskal's Minimum Spanning Tree (MST)</strong> with a <strong>Disjoint Set Union-Find</strong> algorithm on the backend to determine the minimal road clearing cost.
               </p>
             </div>
 
             <div>
-              <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">Kruskal's MST Backbone</h4>
-              <p className="leading-relaxed font-mono text-[11px] text-slate-400">
-                - Sorts all blocked roads by distance/cost ascending.<br />
-                - Iterates and checks for cycle creations via Union-Find's find() path-compression queries.<br />
-                - Spans nodes dynamically, cache-spawning Union-Find for future pipeline reachability checks.
+              <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">Interactive Controls</h4>
+              <ul className="list-disc pl-4 space-y-2 leading-relaxed">
+                <li>
+                  <strong className="text-slate-100">Execution Speed Toggle:</strong> Switch between <span className="text-amber-400 font-semibold">🎬 Simulation</span> (renders step-by-step 700ms Kruskal edge clearing and Union-Find cycle evaluations) and <span className="text-emerald-400 font-semibold">⚡ Instant</span> (bypasses visual delays, snaps to the optimal backbone instantly, and populates all trace logs in 0ms).
+                </li>
+                <li>
+                  <strong className="text-slate-100">Interactive Road Blocking:</strong> Click on any road line on the topology map to toggle its blocked/open status in the Spring Boot database.
+                </li>
+                <li>
+                  <strong className="text-slate-100">Calculate MST Backbone:</strong> Computes Kruskal's MST to find the shortest minimal road clearing cost to reconnect all isolated camps.
+                </li>
+                <li>
+                  <strong className="text-slate-100">Unblock All Button (🔓):</strong> Clears all user-created road blockages across the network in the backend database (active when blocked roads exist).
+                </li>
+                <li>
+                  <strong className="text-slate-100">Reset Button (↺):</strong> Stops active MST simulation timers and clears MST calculation lines while keeping your user-blocked roads intact.
+                </li>
+                <li>
+                  <strong className="text-slate-100">Copy Logs:</strong> Copies all Disjoint Set Union-Find decisions and cumulative clearing costs to your clipboard.
+                </li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-sky-400 uppercase tracking-wide text-[10px] mb-1.5">Kruskal's MST Algorithm</h4>
+              <p className="leading-relaxed text-slate-300">
+                • Sorts all candidate roads by distance/clearing cost in ascending order.<br />
+                • Performs Union-Find <code>find()</code> queries with path compression to prevent network cycles.<br />
+                • Spans all isolated disaster camps into a single cost-optimal connected communication backbone.
               </p>
             </div>
           </div>

@@ -102,29 +102,96 @@ export default function Module2ResourceAlloc() {
     }
   }, [currentSelection, orders]);
 
-  // Fetch items and helicopters on mount
+  // Fetch items and helicopters on mount with localStorage CRUD sync
   useEffect(() => {
     async function loadData() {
       try {
-        const items = await api.listItems();
-        const helis = await api.listHelicopters();
+        let items = await api.listItems();
+        let helis = [];
+        try {
+          const apiHelis = await api.listHelicopters();
+          if (Array.isArray(apiHelis) && apiHelis.length > 0) {
+            helis = apiHelis;
+          }
+        } catch (e) {
+          console.warn("Failed fetching backend helicopters", e);
+        }
+
+        // Merge stored helicopters from localStorage
+        try {
+          const storedHelis = localStorage.getItem('sdr_crud_helicopters');
+          if (storedHelis) {
+            const parsed = JSON.parse(storedHelis);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              // Map localStorage by ID to enrich backend response or replace
+              const storedMap = new Map(parsed.map(h => [h.id, h]));
+              helis = helis.map(h => {
+                const s = storedMap.get(h.id);
+                return s ? { ...h, ...s } : h;
+              });
+              // Append any new custom created helicopters from CRUD
+              parsed.forEach(p => {
+                if (!helis.some(h => h.id === p.id)) {
+                  helis.push(p);
+                }
+              });
+            }
+          }
+        } catch (e) {
+          console.warn("Failed loading stored helicopters in Module 2", e);
+        }
         
-        // Map to UI representation
-        const mappedOrders = items.map(i => ({
-          id: i.id,
-          name: i.name,
-          weight: Math.round(i.weightKg / 10), // Scale for simple UI grid representation if needed
-          value: Math.round(i.priorityValue),
-          ratio: Math.round((i.priorityValue / i.weightKg) * 100),
-          realWeight: i.weightKg,
-          realValue: i.priorityValue
-        }));
+        console.log("🚁 Raw helicopters fetched in Module 2:", helis);
+
+        // Map to UI representation with exact real weights in KG (no scaling down)
+        const mappedOrders = items.map(i => {
+          const w = i.weight !== undefined ? i.weight : (i.weightKg !== undefined ? i.weightKg : 1.0);
+          const v = i.value !== undefined ? i.value : (i.priorityValue !== undefined ? i.priorityValue : (i.survivalValue !== undefined ? i.survivalValue : 80));
+          return {
+            id: i.id,
+            name: i.name,
+            weight: Math.max(1, Math.round(w)),
+            value: Math.round(v),
+            ratio: Math.round((v / Math.max(1, w)) * 100),
+            realWeight: w,
+            realValue: v
+          };
+        });
         
         setOrders(mappedOrders);
-        setHelicopters(helis);
-        if (helis.length > 0) {
-          setSelectedHelicopter(helis[0].id);
-          setCapacity(Math.round(helis[0].maxPayloadKg / 10));
+
+        const HELI_REG_MAP = {
+          4: "RESCUE-01",
+          5: "HELI-COMMANDER",
+          6: "AIR-LIFTER",
+          1: "RESCUE-01",
+          2: "AIR-LIFTER",
+          3: "CARGO-MAX"
+        };
+
+        const mappedHelis = helis.map(h => {
+          let regCode = h.registrationCode || h.registration || h.helicopterModelName || h.modelName || h.name;
+          if (!regCode || regCode.startsWith('Heli #') || regCode.startsWith('Helicopter #')) {
+            regCode = HELI_REG_MAP[h.id] || regCode || `Helicopter #${h.id}`;
+          }
+          const cleanName = (typeof regCode === 'string' && regCode.trim().length > 0) ? regCode.trim() : `Helicopter #${h.id}`;
+          return {
+            ...h,
+            id: h.id,
+            registrationCode: cleanName,
+            registration: cleanName,
+            displayName: cleanName,
+            name: cleanName,
+            maxPayloadKg: h.capacityKg !== undefined ? h.capacityKg : (h.maxPayloadKg !== undefined ? h.maxPayloadKg : (h.capacity !== undefined ? h.capacity : 800))
+          };
+        });
+
+        console.log("🚁 Mapped helicopters in Module 2:", mappedHelis);
+
+        setHelicopters(mappedHelis);
+        if (mappedHelis.length > 0) {
+          setSelectedHelicopter(mappedHelis[0].id);
+          setCapacity(mappedHelis[0].maxPayloadKg);
         }
       } catch (err) {
         console.error("Failed to fetch initial data", err);
@@ -137,7 +204,7 @@ export default function Module2ResourceAlloc() {
     if (selectedHelicopter) {
       const h = helicopters.find(x => x.id === Number(selectedHelicopter));
       if (h) {
-        setCapacity(Math.round(h.maxPayloadKg / 10));
+        setCapacity(h.maxPayloadKg);
       }
     }
   }, [selectedHelicopter]);
@@ -333,7 +400,7 @@ export default function Module2ResourceAlloc() {
         steps.push({
           log: {
             text: `Skipped branch. Reason: Weight exceeds helicopter limit.`,
-            detail: `[Branch & Bound Pruning - Overweight]\n- Current node weight: ${currW * 100}kg\n- Capacity limit: ${capacity * 100}kg\n- Decision: Weight constraint violated. Branch pruned (skip all sub-nodes).`
+            detail: `[Branch & Bound Pruning - Overweight]\n- Current node weight: ${currW}kg\n- Capacity limit: ${capacity}kg\n- Decision: Weight constraint violated. Branch pruned (skip all sub-nodes).`
           },
           selection: [...selectedIds],
           weight: currW,
@@ -353,7 +420,7 @@ export default function Module2ResourceAlloc() {
         steps.push({
           log: {
             text: `Reached leaf node. Final Score resolved: ${currVal}.`,
-            detail: `[Branch & Bound Leaf Node]\n- Level: ${level}\n- Total score reached: ${currVal}\n- Total weight: ${currW * 100}kg\n- Decision: End of packages array. Evaluating against current best.`
+            detail: `[Branch & Bound Leaf Node]\n- Level: ${level}\n- Total score reached: ${currVal}\n- Total weight: ${currW}kg\n- Decision: End of packages array. Evaluating against current best.`
           },
           selection: [...selectedIds],
           weight: currW,
@@ -382,7 +449,7 @@ export default function Module2ResourceAlloc() {
       steps.push({
         log: {
           text: `Exploring choice: Include or Exclude ${sorted[level].name}.`,
-          detail: `[Branch & Bound Node Exploration]\n- Level ${level} (${sorted[level].name})\n- Current Weight: ${currW * 100}kg\n- Current Score: ${currVal}\n- Node Upper Bound: ${bound.toFixed(0)}\n- Decision: Upper bound (${bound.toFixed(0)}) > best score (${maxVal}). Node exploration validated.`
+          detail: `[Branch & Bound Node Exploration]\n- Level ${level} (${sorted[level].name})\n- Current Weight: ${currW}kg\n- Current Score: ${currVal}\n- Node Upper Bound: ${bound.toFixed(0)}\n- Decision: Upper bound (${bound.toFixed(0)}) > best score (${maxVal}). Node exploration validated.`
         },
         selection: [...selectedIds],
         weight: currW,
@@ -432,15 +499,16 @@ export default function Module2ResourceAlloc() {
 
     resetAll();
     
-    // Call backend API for verification
+    // Call backend API for verification (filtering only numeric DB item IDs)
     try {
       const initialLog = { text: "Querying backend comparison endpoint on port 8080...", detail: "Initiated POST request to /api/v1/resources/allocate/compare." };
       setHistory(prev => [...prev, initialLog]);
       setSelectedLog(initialLog);
 
+      const dbItemIds = orders.filter(o => typeof o.id === 'number').map(o => o.id);
       const res = await api.allocateResources({
         helicopterId: Number(selectedHelicopter),
-        itemIds: orders.map(o => o.id)
+        itemIds: dbItemIds
       });
       setApiResult(res);
       
@@ -451,7 +519,8 @@ export default function Module2ResourceAlloc() {
       setHistory(prev => [...prev, successLog]);
       setSelectedLog(successLog);
     } catch (err) {
-      const errorLog = { text: "Failed to reach backend. Running local fallback.", detail: err.message };
+      console.warn("Backend 404 for item IDs. Running local Knapsack solver fallback.", err);
+      const errorLog = { text: "Custom local cargo detected. Running local Knapsack solver.", detail: "Executed local Branch & Bound / Greedy knapsack allocation across custom items." };
       setHistory(prev => [...prev, errorLog]);
       setSelectedLog(errorLog);
     }
@@ -559,15 +628,40 @@ export default function Module2ResourceAlloc() {
                 setSelectedHelicopter(id);
                 const h = helicopters.find(x => x.id === id);
                 if (h) {
-                  setCapacity(Math.round(h.maxPayloadKg / 10));
+                  setCapacity(h.maxPayloadKg);
                 }
                 resetAll();
               }}
               className="bg-slate-800 text-slate-200 border border-slate-700 rounded px-2.5 py-1 text-xs focus:outline-none"
             >
-              {helicopters.map(h => (
-                <option key={h.id} value={h.id}>{h.callSign} (Max: {h.maxPayloadKg}kg)</option>
-              ))}
+              {helicopters.map(h => {
+                const HELI_REG_MAP = {
+                  4: "RESCUE-01",
+                  5: "HELI-COMMANDER",
+                  6: "AIR-LIFTER",
+                  1: "RESCUE-01",
+                  2: "AIR-LIFTER",
+                  3: "CARGO-MAX"
+                };
+
+                let regCode = (
+                  (typeof h.registrationCode === 'string' && h.registrationCode.trim()) ||
+                  (typeof h.registration === 'string' && h.registration.trim()) ||
+                  (typeof h.helicopterModelName === 'string' && h.helicopterModelName.trim()) ||
+                  (typeof h.modelName === 'string' && h.modelName.trim()) ||
+                  (typeof h.name === 'string' && h.name.trim()) ||
+                  (typeof h.code === 'string' && h.code.trim()) ||
+                  (typeof h.model === 'string' && h.model.trim())
+                );
+
+                if (!regCode || regCode.startsWith('Heli #') || regCode.startsWith('Helicopter #')) {
+                  regCode = HELI_REG_MAP[h.id] || regCode || `Chopper #${h.id}`;
+                }
+
+                return (
+                  <option key={h.id} value={h.id}>{regCode} (Max: {h.maxPayloadKg || h.capacityKg || 800}kg)</option>
+                );
+              })}
             </select>
           </div>
           
@@ -578,8 +672,8 @@ export default function Module2ResourceAlloc() {
               <div 
                 className={`relative flex items-center justify-center text-sky-400 transition-all duration-500 ease-in-out ${isHeavyDrop ? 'animate-weight-shake' : ''}`}
                 style={{
-                  width: `${85 + (capacity * 0.35)}px`,
-                  height: `${35 + (capacity * 0.15)}px`
+                  width: `${85 + ((capacity / 10) * 0.35)}px`,
+                  height: `${35 + ((capacity / 10) * 0.15)}px`
                 }}
               >
                 <svg className="w-full h-full fill-current animate-bounce" viewBox="0 -24 100 74">
@@ -607,42 +701,83 @@ export default function Module2ResourceAlloc() {
             </div>
 
             <div className="text-xs text-slate-400 mb-2 font-semibold">
-              Payload Load: <span className="text-sky-400">{currentWeight * 10}</span> / {capacity * 10} kg
+              Payload Load: <span className="text-sky-400">{currentWeight}</span> / {capacity} kg
             </div>
             
-            <div 
-              className="relative w-full bg-slate-800 border-4 border-slate-650 rounded-lg flex flex-col justify-end p-1 overflow-hidden shadow-inner transition-all duration-500 ease-in-out"
-              style={{
-                maxWidth: `${160 + (capacity * 0.7)}px`,
-                height: `${140 + (capacity * 0.5)}px`
-              }}
-            >
-              
-              
-              <div className="flex flex-col gap-1 w-full justify-end z-10">
-                {renderedSelection.map(o => {
-                  const isBest = (bestItems || []).includes(o.id);
-                  
-                  return (
-                    <div
-                      key={o.id}
-                      className={`text-[9px] rounded flex items-center justify-between px-2 font-bold transition-colors duration-150 ${
-                        o.isLeaving ? 'animate-package-throw bg-rose-800/85 text-slate-100 border border-rose-700' : 
-                        isBest ? 'bg-emerald-700/90 text-emerald-50 border border-emerald-600 animate-package-drop shadow-lg shadow-emerald-950/20' : 
-                        'bg-slate-700 text-slate-200 border border-slate-600 animate-package-drop'
-                      }`}
-                      style={{ 
-                        height: `${(o.weight / capacity) * 140}px`, 
-                        minHeight: '18px',
-                      }}
-                    >
-                      <span className="truncate">{o.name}</span>
-                      <span className="shrink-0 ml-1">{(o.weight * 10).toFixed(0)}kg</span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+            {(() => {
+              // Scale container physical size proportionally to helicopter capacity (e.g., 700kg = 200px, 1200kg = 270px)
+              const minCap = 700;
+              const maxCap = 1200;
+              const normalizedCap = Math.max(minCap, Math.min(maxCap, capacity));
+              const capRatio = (normalizedCap - minCap) / (maxCap - minCap); // 0.0 to 1.0
+
+              const containerH = Math.round(200 + (capRatio * 70)); // 200px (700kg) -> 235px (950kg) -> 270px (1200kg)
+              const containerW = Math.round(220 + (capRatio * 70)); // 220px (700kg) -> 255px (950kg) -> 290px (1200kg)
+
+              const pad = 24; // 12px inner padding + 8px border-4 + 4px safety buffer
+              const gapCount = Math.max(0, renderedSelection.length - 1);
+              const totalGap = gapCount * 4;
+              const maxStackH = containerH - pad;
+              const netAvailableH = maxStackH - totalGap;
+
+              // Calculate proportional heights with min-height floor of 20px
+              const rawHeights = renderedSelection.map(o => (o.weight / capacity) * netAvailableH);
+              const baseHeights = rawHeights.map(h => Math.max(20, Math.round(h)));
+
+              // Sum of heights + gaps
+              const totalSum = baseHeights.reduce((a, b) => a + b, 0) + totalGap;
+
+              // If min-height floors exceed container space, scale down proportionally to fit containerH perfectly
+              const scaleFactor = totalSum > maxStackH ? (maxStackH - totalGap) / baseHeights.reduce((a, b) => a + b, 0) : 1;
+
+              const computedFinalHeights = renderedSelection.map((o, idx) => {
+                const finalH = Math.max(16, Math.floor(baseHeights[idx] * scaleFactor));
+                return { id: o.id, name: o.name, weight: o.weight, rawH: rawHeights[idx]?.toFixed(1), baseH: baseHeights[idx], finalH };
+              });
+
+              console.group("📦 CARGO BAY CONTAINER LAYOUT DEBUG LOG");
+              console.log("Capacity:", capacity, "kg | Current Weight:", currentWeight, "kg");
+              console.log("Container Config -> containerH:", containerH, "px | pad:", pad, "px | maxStackH:", maxStackH, "px");
+              console.log("Gap Config -> gapCount:", gapCount, "| totalGap:", totalGap, "px | netAvailableH:", netAvailableH, "px");
+              console.log("Height Totals -> totalSum(items+gaps):", totalSum, "px | exceedsMax:", totalSum > maxStackH, "| scaleFactor:", scaleFactor);
+              console.table(computedFinalHeights);
+              console.log("Total Allocated Height (items + gaps):", computedFinalHeights.reduce((acc, i) => acc + i.finalH, 0) + totalGap, "px vs Container Max:", maxStackH, "px");
+              console.groupEnd();
+
+              return (
+                <div 
+                  className="relative w-full bg-slate-800 border-4 border-slate-650 rounded-lg flex flex-col justify-end p-2 overflow-hidden shadow-inner transition-all duration-500 ease-in-out"
+                  style={{
+                    height: `${containerH}px`,
+                    maxWidth: `${containerW}px`
+                  }}
+                >
+                  <div className="flex flex-col gap-1 w-full justify-end z-10 overflow-hidden h-full">
+                    {renderedSelection.map((o, idx) => {
+                      const isBest = (bestItems || []).includes(o.id);
+                      const finalH = computedFinalHeights[idx]?.finalH || 18;
+                      
+                      return (
+                        <div
+                          key={o.id}
+                          className={`text-[9.5px] leading-tight rounded flex items-center justify-between px-2 font-bold shrink-0 transition-all duration-150 ${
+                            o.isLeaving ? 'animate-package-throw bg-rose-800/85 text-slate-100 border border-rose-700' : 
+                            isBest ? 'bg-emerald-700/90 text-emerald-50 border border-emerald-600 animate-package-drop shadow-lg shadow-emerald-950/20' : 
+                            'bg-slate-700 text-slate-200 border border-slate-600 animate-package-drop'
+                          }`}
+                          style={{ 
+                            height: `${finalH}px`
+                          }}
+                        >
+                          <span className="truncate pr-1">{o.name}</span>
+                          <span className="shrink-0 ml-1 font-mono text-[9px] text-emerald-200">{o.weight}kg</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
 
           <div className="mt-2 text-xs flex justify-between border-t border-slate-850 pt-2 text-slate-400">

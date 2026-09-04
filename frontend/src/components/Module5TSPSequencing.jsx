@@ -920,7 +920,7 @@ export default function Module5TSPSequencing() {
             </svg>
             {/* Cloud 2 (Fast - Large, Lower) */}
             <svg className="absolute w-44 h-36 animate-cloud-drift-fast top-12" viewBox="0 0 100 120" style={{ animationDelay: '-15s' }}>
-              <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#cbd5e1" stroke="#94a3b8" stroke="none" opacity="0.05" />
+              <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#cbd5e1" stroke="none" opacity="0.05" />
             </svg>
             {/* Cloud 3 (Slow - Large, Upper) */}
             <svg className="absolute w-40 h-36 animate-cloud-drift-slow top-5" viewBox="0 0 100 120" style={{ animationDelay: '-50s' }}>

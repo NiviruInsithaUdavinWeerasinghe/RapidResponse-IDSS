@@ -44,7 +44,9 @@ export const api = {
   // Module 2 (Resource Allocation)
   allocateResources: (body) => postRequest('/resources/allocate/compare', body),
   listItems: () => getRequest('/resources/items'),
+  addItem: (body) => postRequest('/resources/items', body),
   listHelicopters: () => getRequest('/resources/helicopters'),
+  addHelicopter: (body) => postRequest('/resources/helicopters', body),
 
   // Module 3 (Network Analysis)
   getMST: () => postRequest('/network/mst', {}),
@@ -57,6 +59,8 @@ export const api = {
   // Module 4 (Intelligent Decision)
   optimizeDecisions: (body) => postRequest('/decisions/optimize/compare', body),
   listSOSRequests: () => getRequest('/decisions/sos-requests'),
+  listAllSOSRequests: () => getRequest('/decisions/sos-requests/all'),
+  addSOSRequest: (body) => postRequest('/decisions/sos-requests', body),
 
   // Module 5 (TSP Sequencing)
   sequenceTour: (body) => postRequest('/sequencing/optimize/compare', body),

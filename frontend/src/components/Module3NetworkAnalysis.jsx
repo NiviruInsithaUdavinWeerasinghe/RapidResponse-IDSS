@@ -95,25 +95,72 @@ export default function Module3NetworkAnalysis() {
       }
       setError(null);
 
-      // Fetch static nodes list only once
-      let activeNodes = nodes;
-      if (nodes.length === 0) {
-        activeNodes = await api.listRouteNodes();
-        setNodes(activeNodes);
+      // Fetch static nodes list and merge localStorage CRUD nodes
+      let activeNodes = await api.listRouteNodes();
+      try {
+        const storedNodes = localStorage.getItem('sdr_crud_nodes');
+        if (storedNodes) {
+          const parsed = JSON.parse(storedNodes);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            activeNodes = parsed;
+          }
+        }
+      } catch (e) {
+        console.warn("Failed loading stored nodes in Module 3", e);
+      }
+      setNodes(activeNodes);
+
+      // Fetch all edges and merge localStorage CRUD edges
+      const edgesData = await api.listEdges();
+      const edgeTracker = new Set();
+      const edgeList = [];
+
+      edgesData.forEach(e => {
+        const sId = e.sourceId ?? e.u;
+        const tId = e.targetId ?? e.v;
+        if (sId && tId) {
+          const pairKey = [sId, tId].sort().join('-');
+          if (!edgeTracker.has(pairKey)) {
+            edgeTracker.add(pairKey);
+            edgeList.push({
+              id: e.id || pairKey,
+              u: sId,
+              v: tId,
+              cost: e.distanceKm ?? e.cost ?? 10.0,
+              blocked: Boolean(e.blocked)
+            });
+          }
+        }
+      });
+
+      try {
+        const storedEdges = localStorage.getItem('sdr_crud_edges');
+        if (storedEdges) {
+          const parsed = JSON.parse(storedEdges);
+          if (Array.isArray(parsed)) {
+            parsed.forEach(e => {
+              const sId = e.sourceId ?? e.u;
+              const tId = e.targetId ?? e.v;
+              if (sId && tId) {
+                const pairKey = [sId, tId].sort().join('-');
+                if (!edgeTracker.has(pairKey)) {
+                  edgeTracker.add(pairKey);
+                  edgeList.push({
+                    id: e.id || pairKey,
+                    u: sId,
+                    v: tId,
+                    cost: e.distanceKm ?? e.cost ?? 10.0,
+                    blocked: Boolean(e.blocked)
+                  });
+                }
+              }
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("Failed merging stored edges in Module 3", err);
       }
 
-      // Fetch all edges in a single request
-      const edgesData = await api.listEdges();
-      const edgeList = edgesData.map(e => {
-        const pairKey = [e.sourceId, e.targetId].sort().join('-');
-        return {
-          id: pairKey,
-          u: e.sourceId,
-          v: e.targetId,
-          cost: e.distanceKm,
-          blocked: e.blocked
-        };
-      });
       setEdges(edgeList);
 
       // Fetch real-time reachability and connected components from Spring Boot API
@@ -418,7 +465,7 @@ export default function Module3NetworkAnalysis() {
               </svg>
               {/* Cloud 2 (Fast - Large, Lower) */}
               <svg className="absolute w-44 h-36 animate-cloud-drift-fast top-12" viewBox="0 0 100 120" style={{ animationDelay: '-15s' }}>
-                <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#cbd5e1" stroke="#94a3b8" stroke="none" opacity="0.05" />
+                <path d="M20 35a10 10 0 0 1 10-10 12 12 0 0 1 22-8 15 15 0 0 1 28 3 10 10 0 0 1 10 10 10 10 0 0 1-10 10H30a10 10 0 0 1-10-10z" fill="#cbd5e1" stroke="none" opacity="0.05" />
               </svg>
               {/* Cloud 3 (Slow - Large, Upper) */}
               <svg className="absolute w-40 h-36 animate-cloud-drift-slow top-5" viewBox="0 0 100 120" style={{ animationDelay: '-50s' }}>

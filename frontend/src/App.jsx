@@ -1,19 +1,25 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Compass, Truck, Link, Award, Eye, Menu, X } from 'lucide-react';
+import { Activity, Compass, Truck, Link, Award, Eye, Menu, X, Database } from 'lucide-react';
 import DashboardOverview from './components/DashboardOverview';
 import Module1RouteOpt from './components/Module1RouteOpt';
 import Module2ResourceAlloc from './components/Module2ResourceAlloc';
 import Module3NetworkAnalysis from './components/Module3NetworkAnalysis';
 import Module4IntelligentDec from './components/Module4IntelligentDec';
 import Module5TSPSequencing from './components/Module5TSPSequencing';
+import CrudDashboard from './components/CrudDashboard';
 
 export default function App() {
+  const isCrudStandalone = window.location.search.includes('view=crud');
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sdr_active_tab') || 'overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     localStorage.setItem('sdr_active_tab', activeTab);
   }, [activeTab]);
+
+  if (isCrudStandalone) {
+    return <CrudDashboard />;
+  }
 
   const tabs = [
     { id: 'overview', label: 'System Overview', icon: Activity, component: DashboardOverview },
@@ -75,13 +81,29 @@ export default function App() {
           </nav>
         </div>
 
-        {/* Sidebar Footer */}
-        {isSidebarOpen && (
-          <div className="p-6 border-t border-slate-850 text-[10px] text-slate-500 text-center">
-            BSc (Hons) Computing-26.1 Coursework
-            <br />© 2026 Smart Disaster Relief DSS
+        {/* Bottom Actions & Sidebar Footer */}
+        <div className="border-t border-slate-850">
+          <div className="p-3">
+            <button
+              onClick={() => window.open('/?view=crud', '_blank')}
+              className="flex items-center justify-center gap-2.5 w-full p-2.5 rounded-xl text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all shadow-sm active:scale-95"
+              title="Open Data Management CRUD Portal in a new tab"
+            >
+              <Database className="w-4 h-4 text-amber-400 shrink-0" />
+              {isSidebarOpen && <span>Data Management CRUD</span>}
+            </button>
           </div>
-        )}
+
+          {isSidebarOpen && (
+            <div className="p-4 border-t border-slate-850/60 text-[9.5px] text-slate-400 text-center leading-relaxed font-sans">
+              <span className="font-semibold text-slate-300">BSc Hons Computer Science with Artificial Intelligence</span>
+              <br />
+              <span>2026.1 - PDSA 2 Coursework</span>
+              <br />
+              <span className="text-slate-500">© 2026 Smart Disaster Relief DSS</span>
+            </div>
+          )}
+        </div>
       </aside>
 
       {/* Main Workspace */}

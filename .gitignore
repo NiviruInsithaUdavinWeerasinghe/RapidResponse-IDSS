@@ -39,8 +39,10 @@ desktop/node_modules/
 desktop/dist-exe/
 desktop/frontend-dist/
 *.exe
+!deliverables/*.exe
 
 # General build & package artifacts
 **/node_modules/
 **/dist/
 **/dist-exe/
+

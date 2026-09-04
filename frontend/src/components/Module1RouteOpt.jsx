@@ -221,17 +221,19 @@ const INITIAL_EDGES = [
         nodesData = INITIAL_NODES;
       }
 
-      // Merge stored CRUD nodes from localStorage if any
-      try {
-        const storedNodes = localStorage.getItem('sdr_crud_nodes');
-        if (storedNodes) {
-          const parsed = JSON.parse(storedNodes);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            nodesData = parsed;
+      // Merge stored CRUD nodes from localStorage if offline
+      if (!nodesData || nodesData.length === 0 || nodesData === INITIAL_NODES) {
+        try {
+          const storedNodes = localStorage.getItem('sdr_crud_nodes');
+          if (storedNodes) {
+            const parsed = JSON.parse(storedNodes);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              nodesData = parsed;
+            }
           }
+        } catch (e) {
+          console.warn("Failed loading stored nodes", e);
         }
-      } catch (e) {
-        console.warn("Failed loading stored nodes", e);
       }
 
       setNodes(nodesData);

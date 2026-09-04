@@ -164,16 +164,18 @@ const INITIAL_EDGES = [
         activeNodes = INITIAL_NODES;
       }
 
-      try {
-        const storedNodes = localStorage.getItem('sdr_crud_nodes');
-        if (storedNodes) {
-          const parsed = JSON.parse(storedNodes);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            activeNodes = parsed;
+      if (!activeNodes || activeNodes.length === 0 || activeNodes === INITIAL_NODES) {
+        try {
+          const storedNodes = localStorage.getItem('sdr_crud_nodes');
+          if (storedNodes) {
+            const parsed = JSON.parse(storedNodes);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              activeNodes = parsed;
+            }
           }
+        } catch (e) {
+          console.warn("Failed loading stored nodes in Module 3", e);
         }
-      } catch (e) {
-        console.warn("Failed loading stored nodes in Module 3", e);
       }
       setNodes(activeNodes);
 

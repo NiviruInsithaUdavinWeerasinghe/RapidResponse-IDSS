@@ -149,11 +149,77 @@ export default function Module1RouteOpt() {
     fetchNetworkData();
   }, []);
 
+const INITIAL_NODES = [
+  { id: 1, name: "Colombo HQ", nodeType: "HQ", x: 100, y: 150 },
+  { id: 2, name: "Galle Rescue Camp (A)", nodeType: "RESCUE_CAMP", x: 630, y: 210 },
+  { id: 3, name: "Matara Rescue Camp (B)", nodeType: "RESCUE_CAMP", x: 770, y: 295 },
+  { id: 4, name: "Hambantota Camp (C)", nodeType: "RESCUE_CAMP", x: 810, y: 220 },
+  { id: 5, name: "Ratnapura Junction (JA)", nodeType: "INTERSECTION", x: 485, y: 225 },
+  { id: 6, name: "Camp Echo (D)", nodeType: "RESCUE_CAMP", x: 90, y: 350 },
+  { id: 7, name: "Camp Foxtrot (E)", nodeType: "RESCUE_CAMP", x: 195, y: 360 },
+  { id: 8, name: "Camp Golf (F)", nodeType: "RESCUE_CAMP", x: 600, y: 355 },
+  { id: 9, name: "Camp Hotel (G)", nodeType: "RESCUE_CAMP", x: 740, y: 355 },
+  { id: 10, name: "Camp India (H)", nodeType: "RESCUE_CAMP", x: 550, y: 145 },
+  { id: 11, name: "Camp Juliet (I)", nodeType: "RESCUE_CAMP", x: 420, y: 60 },
+  { id: 12, name: "Camp Kilo (J)", nodeType: "RESCUE_CAMP", x: 80, y: 60 },
+  { id: 13, name: "Camp Lima (K)", nodeType: "RESCUE_CAMP", x: 230, y: 120 },
+  { id: 14, name: "Junction Maharagama (JB)", nodeType: "INTERSECTION", x: 170, y: 150 },
+  { id: 15, name: "Junction Piliyandala (JC)", nodeType: "INTERSECTION", x: 130, y: 215 },
+  { id: 16, name: "Junction Bandaragama (JD)", nodeType: "INTERSECTION", x: 240, y: 258 },
+  { id: 17, name: "Junction Dodangoda (JE)", nodeType: "INTERSECTION", x: 350, y: 345 },
+  { id: 18, name: "Junction Welipenna (JF)", nodeType: "INTERSECTION", x: 480, y: 385 },
+  { id: 19, name: "Junction Kadawatha (JG)", nodeType: "INTERSECTION", x: 190, y: 75 },
+  { id: 20, name: "Junction Kottawa (JH)", nodeType: "INTERSECTION", x: 285, y: 135 }
+];
+
+const INITIAL_EDGES = [
+  { id: 1, sourceId: 1, targetId: 19, u: 1, v: 19, distanceKm: 8.5, cost: 8.5, blocked: true },
+  { id: 2, sourceId: 1, targetId: 14, u: 1, v: 14, distanceKm: 12.3, cost: 12.3, blocked: false },
+  { id: 3, sourceId: 1, targetId: 13, u: 1, v: 13, distanceKm: 14.0, cost: 14.0, blocked: false },
+  { id: 4, sourceId: 1, targetId: 12, u: 1, v: 12, distanceKm: 35.2, cost: 35.2, blocked: false },
+  { id: 5, sourceId: 19, targetId: 12, u: 19, v: 12, distanceKm: 28.0, cost: 28.0, blocked: false },
+  { id: 6, sourceId: 19, targetId: 13, u: 19, v: 13, distanceKm: 10.5, cost: 10.5, blocked: false },
+  { id: 7, sourceId: 13, targetId: 11, u: 13, v: 11, distanceKm: 26.0, cost: 26.0, blocked: true },
+  { id: 8, sourceId: 13, targetId: 20, u: 13, v: 20, distanceKm: 9.8, cost: 9.8, blocked: false },
+  { id: 9, sourceId: 13, targetId: 14, u: 13, v: 14, distanceKm: 7.5, cost: 7.5, blocked: false },
+  { id: 10, sourceId: 20, targetId: 14, u: 20, v: 14, distanceKm: 5.2, cost: 5.2, blocked: true },
+  { id: 11, sourceId: 20, targetId: 15, u: 20, v: 15, distanceKm: 8.0, cost: 8.0, blocked: false },
+  { id: 12, sourceId: 20, targetId: 17, u: 20, v: 17, distanceKm: 45.0, cost: 45.0, blocked: true },
+  { id: 13, sourceId: 14, targetId: 15, u: 14, v: 15, distanceKm: 6.5, cost: 6.5, blocked: true },
+  { id: 14, sourceId: 14, targetId: 2, u: 14, v: 2, distanceKm: 9.0, cost: 9.0, blocked: false },
+  { id: 15, sourceId: 15, targetId: 2, u: 15, v: 2, distanceKm: 7.8, cost: 7.8, blocked: true },
+  { id: 16, sourceId: 15, targetId: 3, u: 15, v: 3, distanceKm: 10.5, cost: 10.5, blocked: false },
+  { id: 17, sourceId: 15, targetId: 16, u: 15, v: 16, distanceKm: 15.0, cost: 15.0, blocked: false },
+  { id: 20, sourceId: 3, targetId: 16, u: 3, v: 16, distanceKm: 18.0, cost: 18.0, blocked: false },
+  { id: 21, sourceId: 16, targetId: 4, u: 16, v: 4, distanceKm: 5.5, cost: 5.5, blocked: true },
+  { id: 22, sourceId: 16, targetId: 17, u: 16, v: 17, distanceKm: 22.0, cost: 22.0, blocked: true },
+  { id: 23, sourceId: 4, targetId: 10, u: 4, v: 10, distanceKm: 40.0, cost: 40.0, blocked: true },
+  { id: 24, sourceId: 4, targetId: 11, u: 4, v: 11, distanceKm: 35.0, cost: 35.0, blocked: false },
+  { id: 25, sourceId: 5, targetId: 6, u: 5, v: 6, distanceKm: 13.0, cost: 13.0, blocked: false },
+  { id: 26, sourceId: 5, targetId: 17, u: 5, v: 17, distanceKm: 10.0, cost: 10.0, blocked: false },
+  { id: 27, sourceId: 6, targetId: 7, u: 6, v: 7, distanceKm: 5.5, cost: 5.5, blocked: false },
+  { id: 28, sourceId: 7, targetId: 17, u: 7, v: 17, distanceKm: 12.0, cost: 12.0, blocked: true },
+  { id: 29, sourceId: 17, targetId: 18, u: 17, v: 18, distanceKm: 20.0, cost: 20.0, blocked: false },
+  { id: 30, sourceId: 17, targetId: 8, u: 17, v: 8, distanceKm: 60.0, cost: 60.0, blocked: false },
+  { id: 31, sourceId: 18, targetId: 8, u: 18, v: 8, distanceKm: 42.0, cost: 42.0, blocked: false },
+  { id: 32, sourceId: 8, targetId: 9, u: 8, v: 9, distanceKm: 45.0, cost: 45.0, blocked: true },
+  { id: 321, sourceId: 10, targetId: 5, u: 10, v: 5, distanceKm: 15.0, cost: 15.0, blocked: false },
+  { id: 3211, sourceId: 10, targetId: 11, u: 10, v: 11, distanceKm: 25.0, cost: 25.0, blocked: false },
+  { id: 3212, sourceId: 3, targetId: 9, u: 3, v: 9, distanceKm: 12.0, cost: 12.0, blocked: false },
+  { id: 3213, sourceId: 3, targetId: 8, u: 3, v: 8, distanceKm: 35.0, cost: 35.0, blocked: false }
+];
+
   const fetchNetworkData = async () => {
     try {
       setLoading(true);
       setError(null);
-      let nodesData = await api.listRouteNodes();
+      let nodesData;
+      try {
+        nodesData = await api.listRouteNodes();
+      } catch (err) {
+        console.warn("Backend REST API unavailable, using seed nodes fallback", err);
+        nodesData = INITIAL_NODES;
+      }
 
       // Merge stored CRUD nodes from localStorage if any
       try {
@@ -208,29 +274,27 @@ export default function Module1RouteOpt() {
         })
       );
 
-      // Merge stored CRUD edges from localStorage if any
+      // Merge stored CRUD edges or seed fallback edges
       try {
         const storedEdges = localStorage.getItem('sdr_crud_edges');
-        if (storedEdges) {
-          const parsed = JSON.parse(storedEdges);
-          if (Array.isArray(parsed)) {
-            parsed.forEach(e => {
-              const sId = e.sourceId ?? e.u;
-              const tId = e.targetId ?? e.v;
-              if (sId && tId) {
-                const pairKey = [sId, tId].sort().join('-');
-                if (!edgeTracker.has(pairKey)) {
-                  edgeTracker.add(pairKey);
-                  edgeList.push({
-                    sourceId: sId,
-                    targetId: tId,
-                    distanceKm: e.distanceKm ?? e.cost ?? 10.0,
-                    blocked: Boolean(e.blocked)
-                  });
-                }
+        const edgesToMerge = storedEdges ? JSON.parse(storedEdges) : INITIAL_EDGES;
+        if (Array.isArray(edgesToMerge)) {
+          edgesToMerge.forEach(e => {
+            const sId = e.sourceId ?? e.u;
+            const tId = e.targetId ?? e.v;
+            if (sId && tId) {
+              const pairKey = [sId, tId].sort().join('-');
+              if (!edgeTracker.has(pairKey)) {
+                edgeTracker.add(pairKey);
+                edgeList.push({
+                  sourceId: sId,
+                  targetId: tId,
+                  distanceKm: e.distanceKm ?? e.cost ?? 10.0,
+                  blocked: Boolean(e.blocked)
+                });
               }
-            });
-          }
+            }
+          });
         }
       } catch (err) {
         console.warn("Failed merging stored edges", err);

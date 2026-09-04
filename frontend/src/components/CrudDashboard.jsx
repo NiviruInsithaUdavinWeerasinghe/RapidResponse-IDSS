@@ -52,6 +52,43 @@ const INITIAL_DISASTER_ZONES = [
   { id: 4, campName: "Camp Delta (Ratnapura)", population: 680, vulnerabilityScore: 6.5, urgencyScore: 7.0, infrastructureDamagePercent: 45 }
 ];
 
+const INITIAL_EDGES = [
+  { id: 1, sourceId: 1, targetId: 19, u: 1, v: 19, distanceKm: 8.5, cost: 8.5, blocked: true },
+  { id: 2, sourceId: 1, targetId: 14, u: 1, v: 14, distanceKm: 12.3, cost: 12.3, blocked: false },
+  { id: 3, sourceId: 1, targetId: 13, u: 1, v: 13, distanceKm: 14.0, cost: 14.0, blocked: false },
+  { id: 4, sourceId: 1, targetId: 12, u: 1, v: 12, distanceKm: 35.2, cost: 35.2, blocked: false },
+  { id: 5, sourceId: 19, targetId: 12, u: 19, v: 12, distanceKm: 28.0, cost: 28.0, blocked: false },
+  { id: 6, sourceId: 19, targetId: 13, u: 19, v: 13, distanceKm: 10.5, cost: 10.5, blocked: false },
+  { id: 7, sourceId: 13, targetId: 11, u: 13, v: 11, distanceKm: 26.0, cost: 26.0, blocked: true },
+  { id: 8, sourceId: 13, targetId: 20, u: 13, v: 20, distanceKm: 9.8, cost: 9.8, blocked: false },
+  { id: 9, sourceId: 13, targetId: 14, u: 13, v: 14, distanceKm: 7.5, cost: 7.5, blocked: false },
+  { id: 10, sourceId: 20, targetId: 14, u: 20, v: 14, distanceKm: 5.2, cost: 5.2, blocked: true },
+  { id: 11, sourceId: 20, targetId: 15, u: 20, v: 15, distanceKm: 8.0, cost: 8.0, blocked: false },
+  { id: 12, sourceId: 20, targetId: 17, u: 20, v: 17, distanceKm: 45.0, cost: 45.0, blocked: true },
+  { id: 13, sourceId: 14, targetId: 15, u: 14, v: 15, distanceKm: 6.5, cost: 6.5, blocked: true },
+  { id: 14, sourceId: 14, targetId: 2, u: 14, v: 2, distanceKm: 9.0, cost: 9.0, blocked: false },
+  { id: 15, sourceId: 15, targetId: 2, u: 15, v: 2, distanceKm: 7.8, cost: 7.8, blocked: true },
+  { id: 16, sourceId: 15, targetId: 3, u: 15, v: 3, distanceKm: 10.5, cost: 10.5, blocked: false },
+  { id: 17, sourceId: 15, targetId: 16, u: 15, v: 16, distanceKm: 15.0, cost: 15.0, blocked: false },
+  { id: 20, sourceId: 3, targetId: 16, u: 3, v: 16, distanceKm: 18.0, cost: 18.0, blocked: false },
+  { id: 21, sourceId: 16, targetId: 4, u: 16, v: 4, distanceKm: 5.5, cost: 5.5, blocked: true },
+  { id: 22, sourceId: 16, targetId: 17, u: 16, v: 17, distanceKm: 22.0, cost: 22.0, blocked: true },
+  { id: 23, sourceId: 4, targetId: 10, u: 4, v: 10, distanceKm: 40.0, cost: 40.0, blocked: true },
+  { id: 24, sourceId: 4, targetId: 11, u: 4, v: 11, distanceKm: 35.0, cost: 35.0, blocked: false },
+  { id: 25, sourceId: 5, targetId: 6, u: 5, v: 6, distanceKm: 13.0, cost: 13.0, blocked: false },
+  { id: 26, sourceId: 5, targetId: 17, u: 5, v: 17, distanceKm: 10.0, cost: 10.0, blocked: false },
+  { id: 27, sourceId: 6, targetId: 7, u: 6, v: 7, distanceKm: 5.5, cost: 5.5, blocked: false },
+  { id: 28, sourceId: 7, targetId: 17, u: 7, v: 17, distanceKm: 12.0, cost: 12.0, blocked: true },
+  { id: 29, sourceId: 17, targetId: 18, u: 17, v: 18, distanceKm: 20.0, cost: 20.0, blocked: false },
+  { id: 30, sourceId: 17, targetId: 8, u: 17, v: 8, distanceKm: 60.0, cost: 60.0, blocked: false },
+  { id: 31, sourceId: 18, targetId: 8, u: 18, v: 8, distanceKm: 42.0, cost: 42.0, blocked: false },
+  { id: 32, sourceId: 8, targetId: 9, u: 8, v: 9, distanceKm: 45.0, cost: 45.0, blocked: true },
+  { id: 321, sourceId: 10, targetId: 5, u: 10, v: 5, distanceKm: 15.0, cost: 15.0, blocked: false },
+  { id: 3211, sourceId: 10, targetId: 11, u: 10, v: 11, distanceKm: 25.0, cost: 25.0, blocked: false },
+  { id: 3212, sourceId: 3, targetId: 9, u: 3, v: 9, distanceKm: 12.0, cost: 12.0, blocked: false },
+  { id: 3213, sourceId: 3, targetId: 8, u: 3, v: 8, distanceKm: 35.0, cost: 35.0, blocked: false }
+];
+
 export default function CrudDashboard() {
   const [activeCategory, setActiveCategory] = useState(() => {
     return localStorage.getItem('sdr_crud_active_tab') || 'camps';
@@ -121,8 +158,20 @@ export default function CrudDashboard() {
         y: n.y !== undefined ? n.y : (n.latitude !== undefined ? Math.round(n.latitude) : (n.yPos !== undefined ? n.yPos : 200))
       }));
 
+      const fetchedEdges = edgesData.status === 'fulfilled' && Array.isArray(edgesData.value) && edgesData.value.length > 0 ? edgesData.value : INITIAL_EDGES;
+      const normalizedFetchedEdges = fetchedEdges.map(e => ({
+        ...e,
+        sourceId: e.sourceId ?? e.u ?? e.sourceNodeId ?? 1,
+        targetId: e.targetId ?? e.v ?? e.targetNodeId ?? 2,
+        u: e.u ?? e.sourceId ?? e.sourceNodeId ?? 1,
+        v: e.v ?? e.targetId ?? e.targetNodeId ?? 2,
+        distanceKm: e.distanceKm ?? e.cost ?? 10.0,
+        cost: e.cost ?? e.distanceKm ?? 10.0,
+        blocked: Boolean(e.blocked)
+      }));
+
       const finalNodes = getStoredData('nodes', normalizedFetchedNodes);
-      const finalEdges = getStoredData('edges', edgesData.status === 'fulfilled' && Array.isArray(edgesData.value) ? edgesData.value : []);
+      const finalEdges = getStoredData('edges', normalizedFetchedEdges);
       const finalItems = getStoredData('items', itemsData.status === 'fulfilled' && Array.isArray(itemsData.value) && itemsData.value.length > 0 ? itemsData.value : INITIAL_ITEMS);
       const finalHelis = getStoredData('helicopters', helisData.status === 'fulfilled' && Array.isArray(helisData.value) && helisData.value.length > 0 ? helisData.value : INITIAL_HELICOPTERS);
       const finalZones = getStoredData('zones', sosData.status === 'fulfilled' && Array.isArray(sosData.value) && sosData.value.length > 0 ? sosData.value : INITIAL_DISASTER_ZONES);

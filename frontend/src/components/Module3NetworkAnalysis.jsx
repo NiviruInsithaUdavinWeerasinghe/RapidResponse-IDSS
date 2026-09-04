@@ -88,6 +88,66 @@ export default function Module3NetworkAnalysis() {
     });
   };
 
+const INITIAL_NODES = [
+  { id: 1, name: "Colombo HQ", nodeType: "HQ", x: 100, y: 150 },
+  { id: 2, name: "Galle Rescue Camp (A)", nodeType: "RESCUE_CAMP", x: 630, y: 210 },
+  { id: 3, name: "Matara Rescue Camp (B)", nodeType: "RESCUE_CAMP", x: 770, y: 295 },
+  { id: 4, name: "Hambantota Camp (C)", nodeType: "RESCUE_CAMP", x: 810, y: 220 },
+  { id: 5, name: "Ratnapura Junction (JA)", nodeType: "INTERSECTION", x: 485, y: 225 },
+  { id: 6, name: "Camp Echo (D)", nodeType: "RESCUE_CAMP", x: 90, y: 350 },
+  { id: 7, name: "Camp Foxtrot (E)", nodeType: "RESCUE_CAMP", x: 195, y: 360 },
+  { id: 8, name: "Camp Golf (F)", nodeType: "RESCUE_CAMP", x: 600, y: 355 },
+  { id: 9, name: "Camp Hotel (G)", nodeType: "RESCUE_CAMP", x: 740, y: 355 },
+  { id: 10, name: "Camp India (H)", nodeType: "RESCUE_CAMP", x: 550, y: 145 },
+  { id: 11, name: "Camp Juliet (I)", nodeType: "RESCUE_CAMP", x: 420, y: 60 },
+  { id: 12, name: "Camp Kilo (J)", nodeType: "RESCUE_CAMP", x: 80, y: 60 },
+  { id: 13, name: "Camp Lima (K)", nodeType: "RESCUE_CAMP", x: 230, y: 120 },
+  { id: 14, name: "Junction Maharagama (JB)", nodeType: "INTERSECTION", x: 170, y: 150 },
+  { id: 15, name: "Junction Piliyandala (JC)", nodeType: "INTERSECTION", x: 130, y: 215 },
+  { id: 16, name: "Junction Bandaragama (JD)", nodeType: "INTERSECTION", x: 240, y: 258 },
+  { id: 17, name: "Junction Dodangoda (JE)", nodeType: "INTERSECTION", x: 350, y: 345 },
+  { id: 18, name: "Junction Welipenna (JF)", nodeType: "INTERSECTION", x: 480, y: 385 },
+  { id: 19, name: "Junction Kadawatha (JG)", nodeType: "INTERSECTION", x: 190, y: 75 },
+  { id: 20, name: "Junction Kottawa (JH)", nodeType: "INTERSECTION", x: 285, y: 135 }
+];
+
+const INITIAL_EDGES = [
+  { id: 1, sourceId: 1, targetId: 19, u: 1, v: 19, distanceKm: 8.5, cost: 8.5, blocked: true },
+  { id: 2, sourceId: 1, targetId: 14, u: 1, v: 14, distanceKm: 12.3, cost: 12.3, blocked: false },
+  { id: 3, sourceId: 1, targetId: 13, u: 1, v: 13, distanceKm: 14.0, cost: 14.0, blocked: false },
+  { id: 4, sourceId: 1, targetId: 12, u: 1, v: 12, distanceKm: 35.2, cost: 35.2, blocked: false },
+  { id: 5, sourceId: 19, targetId: 12, u: 19, v: 12, distanceKm: 28.0, cost: 28.0, blocked: false },
+  { id: 6, sourceId: 19, targetId: 13, u: 19, v: 13, distanceKm: 10.5, cost: 10.5, blocked: false },
+  { id: 7, sourceId: 13, targetId: 11, u: 13, v: 11, distanceKm: 26.0, cost: 26.0, blocked: true },
+  { id: 8, sourceId: 13, targetId: 20, u: 13, v: 20, distanceKm: 9.8, cost: 9.8, blocked: false },
+  { id: 9, sourceId: 13, targetId: 14, u: 13, v: 14, distanceKm: 7.5, cost: 7.5, blocked: false },
+  { id: 10, sourceId: 20, targetId: 14, u: 20, v: 14, distanceKm: 5.2, cost: 5.2, blocked: true },
+  { id: 11, sourceId: 20, targetId: 15, u: 20, v: 15, distanceKm: 8.0, cost: 8.0, blocked: false },
+  { id: 12, sourceId: 20, targetId: 17, u: 20, v: 17, distanceKm: 45.0, cost: 45.0, blocked: true },
+  { id: 13, sourceId: 14, targetId: 15, u: 14, v: 15, distanceKm: 6.5, cost: 6.5, blocked: true },
+  { id: 14, sourceId: 14, targetId: 2, u: 14, v: 2, distanceKm: 9.0, cost: 9.0, blocked: false },
+  { id: 15, sourceId: 15, targetId: 2, u: 15, v: 2, distanceKm: 7.8, cost: 7.8, blocked: true },
+  { id: 16, sourceId: 15, targetId: 3, u: 15, v: 3, distanceKm: 10.5, cost: 10.5, blocked: false },
+  { id: 17, sourceId: 15, targetId: 16, u: 15, v: 16, distanceKm: 15.0, cost: 15.0, blocked: false },
+  { id: 20, sourceId: 3, targetId: 16, u: 3, v: 16, distanceKm: 18.0, cost: 18.0, blocked: false },
+  { id: 21, sourceId: 16, targetId: 4, u: 16, v: 4, distanceKm: 5.5, cost: 5.5, blocked: true },
+  { id: 22, sourceId: 16, targetId: 17, u: 16, v: 17, distanceKm: 22.0, cost: 22.0, blocked: true },
+  { id: 23, sourceId: 4, targetId: 10, u: 4, v: 10, distanceKm: 40.0, cost: 40.0, blocked: true },
+  { id: 24, sourceId: 4, targetId: 11, u: 4, v: 11, distanceKm: 35.0, cost: 35.0, blocked: false },
+  { id: 25, sourceId: 5, targetId: 6, u: 5, v: 6, distanceKm: 13.0, cost: 13.0, blocked: false },
+  { id: 26, sourceId: 5, targetId: 17, u: 5, v: 17, distanceKm: 10.0, cost: 10.0, blocked: false },
+  { id: 27, sourceId: 6, targetId: 7, u: 6, v: 7, distanceKm: 5.5, cost: 5.5, blocked: false },
+  { id: 28, sourceId: 7, targetId: 17, u: 7, v: 17, distanceKm: 12.0, cost: 12.0, blocked: true },
+  { id: 29, sourceId: 17, targetId: 18, u: 17, v: 18, distanceKm: 20.0, cost: 20.0, blocked: false },
+  { id: 30, sourceId: 17, targetId: 8, u: 17, v: 8, distanceKm: 60.0, cost: 60.0, blocked: false },
+  { id: 31, sourceId: 18, targetId: 8, u: 18, v: 8, distanceKm: 42.0, cost: 42.0, blocked: false },
+  { id: 32, sourceId: 8, targetId: 9, u: 8, v: 9, distanceKm: 45.0, cost: 45.0, blocked: true },
+  { id: 321, sourceId: 10, targetId: 5, u: 10, v: 5, distanceKm: 15.0, cost: 15.0, blocked: false },
+  { id: 3211, sourceId: 10, targetId: 11, u: 10, v: 11, distanceKm: 25.0, cost: 25.0, blocked: false },
+  { id: 3212, sourceId: 3, targetId: 9, u: 3, v: 9, distanceKm: 12.0, cost: 12.0, blocked: false },
+  { id: 3213, sourceId: 3, targetId: 8, u: 3, v: 8, distanceKm: 35.0, cost: 35.0, blocked: false }
+];
+
   const loadNetworkAndStatus = async (isSilent = false) => {
     try {
       if (!isSilent) {
@@ -96,7 +156,14 @@ export default function Module3NetworkAnalysis() {
       setError(null);
 
       // Fetch static nodes list and merge localStorage CRUD nodes
-      let activeNodes = await api.listRouteNodes();
+      let activeNodes;
+      try {
+        activeNodes = await api.listRouteNodes();
+      } catch (err) {
+        console.warn("Backend REST API offline. Using seed nodes fallback.", err);
+        activeNodes = INITIAL_NODES;
+      }
+
       try {
         const storedNodes = localStorage.getItem('sdr_crud_nodes');
         if (storedNodes) {
@@ -111,7 +178,14 @@ export default function Module3NetworkAnalysis() {
       setNodes(activeNodes);
 
       // Fetch all edges and merge localStorage CRUD edges
-      const edgesData = await api.listEdges();
+      let edgesData;
+      try {
+        edgesData = await api.listEdges();
+      } catch (err) {
+        console.warn("Backend REST API offline. Using seed edges fallback.", err);
+        edgesData = INITIAL_EDGES;
+      }
+
       const edgeTracker = new Set();
       const edgeList = [];
 
@@ -163,12 +237,55 @@ export default function Module3NetworkAnalysis() {
 
       setEdges(edgeList);
 
-      // Fetch real-time reachability and connected components from Spring Boot API
-      const reachability = await api.getReachability();
-      setCutOffCamps(reachability.isolatedCamps.map(c => c.name));
+      // Fetch real-time reachability and connected components from Spring Boot API or compute locally
+      let reachability;
+      try {
+        reachability = await api.getReachability();
+      } catch (e) {
+        console.warn("Backend reachability API offline, calculating locally", e);
+        const connectedNodeIds = new Set();
+        edgeList.forEach(e => {
+          if (!e.blocked) {
+            connectedNodeIds.add(Number(e.u));
+            connectedNodeIds.add(Number(e.v));
+          }
+        });
+        const isolatedNodes = activeNodes.filter(n => n.nodeType === 'RESCUE_CAMP' && !connectedNodeIds.has(Number(n.id)));
+        reachability = { isolatedCamps: isolatedNodes };
+      }
+      setCutOffCamps((reachability.isolatedCamps || []).map(c => c.name));
 
-      const comps = await api.getComponents();
-      setComponents(comps.components);
+      let comps;
+      try {
+        comps = await api.getComponents();
+      } catch (e) {
+        console.warn("Backend components API offline, calculating locally", e);
+        const parent = new Map();
+        activeNodes.forEach(n => parent.set(Number(n.id), Number(n.id)));
+        const find = (i) => {
+          let root = i;
+          while (parent.has(root) && parent.get(root) !== root) {
+            root = parent.get(root);
+          }
+          return root;
+        };
+        const union = (i, j) => {
+          const rootI = find(i);
+          const rootJ = find(j);
+          if (rootI !== rootJ) parent.set(rootI, rootJ);
+        };
+        edgeList.forEach(e => {
+          if (!e.blocked) union(Number(e.u), Number(e.v));
+        });
+        const compMap = new Map();
+        activeNodes.forEach(n => {
+          const root = find(Number(n.id));
+          if (!compMap.has(root)) compMap.set(root, []);
+          compMap.get(root).push(n.name);
+        });
+        comps = { components: Array.from(compMap.values()) };
+      }
+      setComponents(comps.components || []);
 
     } catch (err) {
       console.error("Failed to load backend network data", err);
@@ -203,8 +320,17 @@ export default function Module3NetworkAnalysis() {
       await api.resetEdges();
       showToast("All road blocks cleared.");
     } catch (err) {
-      console.error("Failed to reset database edge block statuses", err);
-      showToast("Error clearing road blocks.");
+      console.warn("Backend offline: clearing local road blocks", err);
+      setEdges(prev => prev.map(e => ({ ...e, blocked: false })));
+      try {
+        const storedEdges = localStorage.getItem('sdr_crud_edges');
+        if (storedEdges) {
+          const parsed = JSON.parse(storedEdges);
+          const updated = parsed.map(e => ({ ...e, blocked: false }));
+          localStorage.setItem('sdr_crud_edges', JSON.stringify(updated));
+        }
+      } catch (e) {}
+      showToast("All local road blocks cleared.");
     }
     loadNetworkAndStatus(true);
   };
@@ -213,17 +339,31 @@ export default function Module3NetworkAnalysis() {
     if (isRunning) return;
     try {
       await api.toggleEdgeBlock({ sourceNodeId: uId, targetNodeId: vId });
-      // Instantly clear outdated MST calculation visuals
-      setMstEdges([]);
-      setCurrentEdgeIndex(-1);
-      setLogs([]);
-      setSelectedLog(null);
-      // Reload network states silently
-      await loadNetworkAndStatus(true);
     } catch (err) {
-      console.error("Failed to toggle edge block state in database", err);
-      showToast("Error updating road block status.");
+      console.warn("Backend offline: toggling local edge block state", err);
+      setEdges(prev => prev.map(e => {
+        const matches = (Number(e.u) === Number(uId) && Number(e.v) === Number(vId)) ||
+                        (Number(e.u) === Number(vId) && Number(e.v) === Number(uId));
+        return matches ? { ...e, blocked: !e.blocked } : e;
+      }));
+      try {
+        const storedEdges = localStorage.getItem('sdr_crud_edges');
+        if (storedEdges) {
+          const parsed = JSON.parse(storedEdges);
+          const updated = parsed.map(e => {
+            const matches = (Number(e.sourceId ?? e.u) === Number(uId) && Number(e.targetId ?? e.v) === Number(vId)) ||
+                            (Number(e.sourceId ?? e.u) === Number(vId) && Number(e.targetId ?? e.v) === Number(uId));
+            return matches ? { ...e, blocked: !e.blocked } : e;
+          });
+          localStorage.setItem('sdr_crud_edges', JSON.stringify(updated));
+        }
+      } catch (e) {}
     }
+    setMstEdges([]);
+    setCurrentEdgeIndex(-1);
+    setLogs([]);
+    setSelectedLog(null);
+    await loadNetworkAndStatus(true);
   };
 
   const handleModeSwitch = (instantMode) => {
@@ -262,8 +402,56 @@ export default function Module3NetworkAnalysis() {
     setIsRunning(true);
 
     try {
-      // Trigger MST computation on backend
-      const res = await api.getMST();
+      let res;
+      try {
+        res = await api.getMST();
+      } catch (backendErr) {
+        console.warn("Backend MST API offline. Calculating Kruskal's MST on client.", backendErr);
+        const allEdges = [...edges];
+        const blockedEdges = allEdges.filter(e => e.blocked);
+        const sortedBlocked = [...blockedEdges].sort((a, b) => (a.cost || a.distanceKm || 10) - (b.cost || b.distanceKm || 10));
+
+        const parent = new Map();
+        nodes.forEach(n => parent.set(Number(n.id), Number(n.id)));
+        const find = (i) => {
+          let root = i;
+          while (parent.has(root) && parent.get(root) !== root) {
+            root = parent.get(root);
+          }
+          return root;
+        };
+        const union = (i, j) => {
+          const rootI = find(i);
+          const rootJ = find(j);
+          if (rootI !== rootJ) {
+            parent.set(rootI, rootJ);
+            return true;
+          }
+          return false;
+        };
+
+        allEdges.filter(e => !e.blocked).forEach(e => union(Number(e.u), Number(e.v)));
+
+        const roadsToClear = [];
+        let totalCost = 0;
+        sortedBlocked.forEach(e => {
+          if (union(Number(e.u), Number(e.v))) {
+            const dist = e.cost || e.distanceKm || 10.0;
+            totalCost += dist;
+            roadsToClear.push({
+              sourceNodeId: Number(e.u),
+              targetNodeId: Number(e.v),
+              distanceKm: dist
+            });
+          }
+        });
+
+        res = {
+          roadsToClear,
+          totalCost,
+          componentsReduced: roadsToClear.length > 0 ? `Reduced ${roadsToClear.length} component split(s)` : `Fully connected`
+        };
+      }
       setMstResult(res);
 
       const roadsToClear = res.roadsToClear || [];

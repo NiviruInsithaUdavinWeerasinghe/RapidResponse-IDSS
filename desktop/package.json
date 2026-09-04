@@ -1,0 +1,48 @@
+{
+  "name": "sdr-dss-desktop",
+  "version": "1.0.0",
+  "description": "Smart Disaster Relief DSS - Desktop Application (.exe)",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis"
+  },
+  "keywords": ["pdsa2", "disaster-relief", "dss", "electron"],
+  "author": "Niviru Weerasinghe",
+  "license": "ISC",
+  "dependencies": {},
+  "devDependencies": {
+    "electron": "^32.0.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.smartdisasterrelief.dss",
+    "productName": "RapidResponse-IDSS",
+    "directories": {
+      "output": "dist-exe"
+    },
+    "files": [
+      "main.js",
+      "frontend-dist/**/*",
+      "backend-jar/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../core-application/target/core-application-1.0.0.jar",
+        "to": "backend/core-application.jar"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "RapidResponse-IDSS"
+    }
+  }
+}

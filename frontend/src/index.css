@@ -261,6 +261,98 @@ body {
   animation: lightning-bolt-strike 24s infinite;
 }
 
+@keyframes cursor-tour-m1 {
+  0%, 100% { top: 18%; left: 44%; transform: scale(1); } /* Header (i) Info Icon */
+  8% { top: 18%; left: 44%; transform: scale(0.75); } /* Click Info Icon */
+  
+  20% { top: 6%; left: 75%; transform: scale(1); } /* Compare Both Toggle */
+  28% { top: 6%; left: 75%; transform: scale(0.75); } /* Click Compare Both */
+  
+  40% { top: 48%; left: 16%; transform: scale(1); } /* Node HQ on Map */
+  48% { top: 48%; left: 16%; transform: scale(0.75); } /* Click Node HQ */
+  
+  60% { top: 88%; left: 18%; transform: scale(1); } /* START Dropdown */
+  68% { top: 88%; left: 18%; transform: scale(0.75); } /* Click Dropdown */
+  
+  80% { top: 88%; left: 74%; transform: scale(1); } /* ▶ Optimize Button */
+  88% { top: 88%; left: 74%; transform: scale(0.75); } /* Click Optimize */
+}
 
+.animate-tour-m1 {
+  animation: cursor-tour-m1 10s ease-in-out infinite;
+}
 
+@keyframes cursor-tour-m2 {
+  0%, 100% { top: 6%; left: 75%; transform: scale(1); } /* RESCUE-01 Dropdown */
+  10% { top: 6%; left: 75%; transform: scale(0.75); }
+  
+  35% { top: 58%; left: 25%; transform: scale(1); } /* Cargo Medical Kits */
+  45% { top: 58%; left: 25%; transform: scale(0.75); }
+  
+  70% { top: 88%; left: 78%; transform: scale(1); } /* Pack Supplies Button */
+  80% { top: 88%; left: 78%; transform: scale(0.75); }
+}
 
+.animate-tour-m2 {
+  animation: cursor-tour-m2 9s ease-in-out infinite;
+}
+
+@keyframes cursor-tour-m3 {
+  0%, 100% { top: 46%; left: 45%; transform: scale(1); } /* Road Edge to Block */
+  10% { top: 46%; left: 45%; transform: scale(0.75); }
+  
+  40% { top: 6%; left: 80%; transform: scale(1); } /* Calculate MST Button */
+  50% { top: 6%; left: 80%; transform: scale(0.75); }
+  
+  75% { top: 18%; left: 44%; transform: scale(1); } /* Header Info Icon */
+  85% { top: 18%; left: 44%; transform: scale(0.75); }
+}
+
+.animate-tour-m3 {
+  animation: cursor-tour-m3 9.5s ease-in-out infinite;
+}
+
+@keyframes cursor-tour-m4 {
+  0%, 100% { top: 42%; left: 52%; transform: scale(1); } /* Injury Severity Weight Slider */
+  12% { top: 42%; left: 68%; transform: scale(0.85); } /* Drag Slider Right */
+  
+  40% { top: 62%; left: 45%; transform: scale(1); } /* Rescue Urgency Deadline Slider */
+  50% { top: 62%; left: 55%; transform: scale(0.85); }
+  
+  75% { top: 88%; left: 76%; transform: scale(1); } /* Export to M2 Cargo Button */
+  85% { top: 88%; left: 76%; transform: scale(0.75); }
+}
+
+.animate-tour-m4 {
+  animation: cursor-tour-m4 9.5s ease-in-out infinite;
+}
+
+@keyframes cursor-tour-m5 {
+  0%, 100% { top: 6%; left: 72%; transform: scale(1); } /* Shuffle Delivery Sequence */
+  10% { top: 6%; left: 72%; transform: scale(0.75); }
+  
+  40% { top: 6%; left: 85%; transform: scale(1); } /* Calculate Tour Button */
+  50% { top: 6%; left: 85%; transform: scale(0.75); }
+  
+  75% { top: 50%; left: 50%; transform: scale(1); } /* 2-Opt Polygon Loop Map */
+  85% { top: 50%; left: 50%; transform: scale(0.75); }
+}
+
+.animate-tour-m5 {
+  animation: cursor-tour-m5 9s ease-in-out infinite;
+}
+
+@keyframes cursor-tour-crud {
+  0%, 100% { top: 6%; left: 80%; transform: scale(1); } /* + Add Node Button */
+  10% { top: 6%; left: 80%; transform: scale(0.75); }
+  
+  45% { top: 45%; left: 35%; transform: scale(1); } /* Node Record Row */
+  55% { top: 45%; left: 35%; transform: scale(0.75); }
+  
+  80% { top: 88%; left: 78%; transform: scale(1); } /* Opens in New Window link */
+  90% { top: 88%; left: 78%; transform: scale(0.75); }
+}
+
+.animate-tour-crud {
+  animation: cursor-tour-crud 9s ease-in-out infinite;
+}

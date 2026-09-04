@@ -102,11 +102,47 @@ export default function Module2ResourceAlloc() {
     }
   }, [currentSelection, orders]);
 
+const INITIAL_ITEMS = [
+  { id: 1, name: "Water Purification Tablets", weight: 2.0, value: 95, category: "WATER", quantity: 500 },
+  { id: 2, name: "High-Calorie Emergency Rations", weight: 3.5, value: 90, category: "FOOD", quantity: 350 },
+  { id: 3, name: "Trauma First Aid Kit", weight: 1.5, value: 100, category: "MEDICAL", quantity: 200 },
+  { id: 4, name: "Emergency Thermal Blankets", weight: 1.0, value: 70, category: "SHELTER", quantity: 600 },
+  { id: 5, name: "Heavy Duty Waterproof Tents", weight: 5.0, value: 85, category: "SHELTER", quantity: 150 },
+  { id: 6, name: "Antibiotic & Medical Supplies", weight: 2.5, value: 98, category: "MEDICAL", quantity: 180 },
+  { id: 7, name: "Solar Radio & Satellite Beacon", weight: 1.2, value: 75, category: "COMMUNICATION", quantity: 90 }
+];
+
+const INITIAL_HELICOPTERS = [
+  { id: 1, registration: "RESCUE-01", name: "Bell 412 Rescue Chopper", capacityKg: 700, status: "READY" },
+  { id: 2, registration: "AIR-LIFTER", name: "Mil Mi-17 Heavy Transporter", capacityKg: 950, status: "READY" },
+  { id: 3, registration: "CARGO-MAX", name: "Sikorsky S-92 Cargo Lifter", capacityKg: 1200, status: "STANDBY" }
+];
+
   // Fetch items and helicopters on mount with localStorage CRUD sync
   useEffect(() => {
     async function loadData() {
       try {
-        let items = await api.listItems();
+        let items;
+        try {
+          items = await api.listItems();
+        } catch (e) {
+          console.warn("Backend REST API offline. Using seed items fallback.", e);
+          items = INITIAL_ITEMS;
+        }
+
+        // Merge stored items from localStorage
+        try {
+          const storedItems = localStorage.getItem('sdr_crud_items');
+          if (storedItems) {
+            const parsed = JSON.parse(storedItems);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              items = parsed;
+            }
+          }
+        } catch (e) {
+          console.warn("Failed loading stored items in Module 2", e);
+        }
+
         let helis = [];
         try {
           const apiHelis = await api.listHelicopters();
@@ -115,6 +151,10 @@ export default function Module2ResourceAlloc() {
           }
         } catch (e) {
           console.warn("Failed fetching backend helicopters", e);
+        }
+
+        if (helis.length === 0) {
+          helis = INITIAL_HELICOPTERS;
         }
 
         // Merge stored helicopters from localStorage

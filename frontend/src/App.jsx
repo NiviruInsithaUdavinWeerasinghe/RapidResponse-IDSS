@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Activity, Compass, Truck, Link, Award, Eye, Menu, X, Database } from 'lucide-react';
+import { Activity, Compass, Truck, Link, Award, Eye, Menu, X, Database, Sparkles } from 'lucide-react';
 import DashboardOverview from './components/DashboardOverview';
 import Module1RouteOpt from './components/Module1RouteOpt';
 import Module2ResourceAlloc from './components/Module2ResourceAlloc';
@@ -7,15 +7,25 @@ import Module3NetworkAnalysis from './components/Module3NetworkAnalysis';
 import Module4IntelligentDec from './components/Module4IntelligentDec';
 import Module5TSPSequencing from './components/Module5TSPSequencing';
 import CrudDashboard from './components/CrudDashboard';
+import InteractiveTutorialModal from './components/InteractiveTutorialModal';
+import { api } from './utils/api';
 
 export default function App() {
   const isCrudStandalone = window.location.search.includes('view=crud');
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('sdr_active_tab') || 'overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isTutorialOpen, setIsTutorialOpen] = useState(() => {
+    return !localStorage.getItem('sdr_has_seen_tutorial');
+  });
 
   useEffect(() => {
     localStorage.setItem('sdr_active_tab', activeTab);
   }, [activeTab]);
+
+  const handleCloseTutorial = () => {
+    localStorage.setItem('sdr_has_seen_tutorial', 'true');
+    setIsTutorialOpen(false);
+  };
 
   if (isCrudStandalone) {
     return <CrudDashboard />;
@@ -31,6 +41,44 @@ export default function App() {
   ];
 
   const ActiveComponent = tabs.find(t => t.id === activeTab)?.component || DashboardOverview;
+
+  const [campCount, setCampCount] = useState(null);
+  const [isSystemOnline, setIsSystemOnline] = useState(false);
+
+  useEffect(() => {
+    async function fetchMetrics() {
+      let nodes = [];
+      let online = false;
+      try {
+        const res = await api.listRouteNodes();
+        if (Array.isArray(res) && res.length > 0) {
+          nodes = res;
+          online = true;
+        }
+      } catch (err) {
+        console.warn("Failed to fetch connected camps metric from backend", err);
+      }
+
+      setIsSystemOnline(online);
+
+      if (!Array.isArray(nodes) || nodes.length === 0) {
+        try {
+          const stored = localStorage.getItem('sdr_crud_nodes');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (Array.isArray(parsed) && parsed.length > 0) nodes = parsed;
+          }
+        } catch (e) {}
+      }
+
+      const totalNodes = Array.isArray(nodes) && nodes.length > 0 ? nodes.length : 20;
+      setCampCount(totalNodes);
+    }
+
+    fetchMetrics();
+    const timer = setInterval(fetchMetrics, 6000);
+    return () => clearInterval(timer);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#080C14] text-slate-100 flex flex-col md:flex-row font-sans">
@@ -85,7 +133,14 @@ export default function App() {
         <div className="border-t border-slate-850">
           <div className="p-3">
             <button
-              onClick={() => window.open('/?view=crud', '_blank')}
+              onClick={() => {
+                if (window.location.protocol === 'file:') {
+                  const basePath = window.location.href.split('?')[0].split('#')[0];
+                  window.open(`${basePath}?view=crud`, '_blank');
+                } else {
+                  window.open('/?view=crud', '_blank');
+                }
+              }}
               className="flex items-center justify-center gap-2.5 w-full p-2.5 rounded-xl text-xs font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all shadow-sm active:scale-95"
               title="Open Data Management CRUD Portal in a new tab"
             >
@@ -122,24 +177,39 @@ export default function App() {
             </h2>
           </div>
 
-          {/* Quick Metrics */}
-          <div className="flex items-center gap-4 text-xs">
+          {/* Quick Metrics & Tutorial Action */}
+          <div className="flex items-center gap-3 text-xs">
+            <button
+              onClick={() => setIsTutorialOpen(true)}
+              className="flex items-center gap-1.5 bg-gradient-to-r from-sky-500/20 to-teal-500/20 hover:from-sky-500/30 hover:to-teal-500/30 text-sky-300 font-bold px-3 py-1.5 rounded-lg border border-sky-500/40 transition-all active:scale-95 shadow-sm"
+              title="Launch Platform Walkthrough Tutorial"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-cyan-400 animate-pulse" />
+              <span>Tutorial</span>
+            </button>
             <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-              <span>System: <strong>ONLINE</strong></span>
+              <span className={`w-2 h-2 rounded-full ${isSystemOnline ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500 animate-pulse'}`}></span>
+              <span>System: <strong>{isSystemOnline ? 'ONLINE (Supabase DB)' : 'STANDBY (Local Seed)'}</strong></span>
             </div>
             <div className="bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-850 hidden md:block">
-              Connected Camps: <strong>50 Camps</strong>
+              Connected Camps: <strong>{campCount !== null ? `${campCount} Camps` : '20 Camps'}</strong>
             </div>
           </div>
         </header>
 
         {/* Content viewport */}
-        <div className="flex-1 p-6 overflow-y-auto max-h-[calc(100vh-65px)]">
+        <div className={`flex-1 p-6 ${activeTab === 'overview' ? 'overflow-hidden max-h-[calc(100vh-65px)]' : 'overflow-y-auto max-h-[calc(100vh-65px)]'}`}>
           <ActiveComponent />
         </div>
       </main>
 
+      {/* Interactive Platform Tutorial Modal */}
+      <InteractiveTutorialModal 
+        isOpen={isTutorialOpen} 
+        onClose={handleCloseTutorial} 
+      />
+
     </div>
   );
 }
+

@@ -170,9 +170,8 @@ export default function CrudDashboard() {
         blocked: Boolean(e.blocked)
       }));
 
-      const finalNodes = getStoredData('nodes', normalizedFetchedNodes);
-      const finalEdges = getStoredData('edges', normalizedFetchedEdges);
-      const finalItems = getStoredData('items', itemsData.status === 'fulfilled' && Array.isArray(itemsData.value) && itemsData.value.length > 0 ? itemsData.value : INITIAL_ITEMS);
+      const fetchedItems = itemsData.status === 'fulfilled' && Array.isArray(itemsData.value) && itemsData.value.length > 0 ? itemsData.value : null;
+      const finalItems = fetchedItems || getStoredData('items', INITIAL_ITEMS);
       const finalHelis = getStoredData('helicopters', helisData.status === 'fulfilled' && Array.isArray(helisData.value) && helisData.value.length > 0 ? helisData.value : INITIAL_HELICOPTERS);
       const finalZones = getStoredData('zones', sosData.status === 'fulfilled' && Array.isArray(sosData.value) && sosData.value.length > 0 ? sosData.value : INITIAL_DISASTER_ZONES);
 

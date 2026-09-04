@@ -122,25 +122,32 @@ const INITIAL_HELICOPTERS = [
   useEffect(() => {
     async function loadData() {
       try {
-        let items;
+        let items = [];
         try {
-          items = await api.listItems();
-        } catch (e) {
-          console.warn("Backend REST API offline. Using seed items fallback.", e);
-          items = INITIAL_ITEMS;
-        }
-
-        // Merge stored items from localStorage
-        try {
-          const storedItems = localStorage.getItem('sdr_crud_items');
-          if (storedItems) {
-            const parsed = JSON.parse(storedItems);
-            if (Array.isArray(parsed) && parsed.length > 0) {
-              items = parsed;
-            }
+          const apiItems = await api.listItems();
+          if (Array.isArray(apiItems) && apiItems.length > 0) {
+            items = apiItems;
           }
         } catch (e) {
-          console.warn("Failed loading stored items in Module 2", e);
+          console.warn("Backend REST API offline. Falling back to local cache or seed items.", e);
+        }
+
+        if (items.length === 0) {
+          try {
+            const storedItems = localStorage.getItem('sdr_crud_items');
+            if (storedItems) {
+              const parsed = JSON.parse(storedItems);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                items = parsed;
+              }
+            }
+          } catch (e) {
+            console.warn("Failed loading stored items in Module 2", e);
+          }
+        }
+
+        if (items.length === 0) {
+          items = INITIAL_ITEMS;
         }
 
         let helis = [];

@@ -40,7 +40,7 @@ public class RouteController {
             @ApiResponse(responseCode = "400", description = "Invalid request body"),
             @ApiResponse(responseCode = "404", description = "Source or target node was not found")
     })
-    @PostMapping({"/dijkstraRun", "/dijkstra"})
+    @PostMapping("/dijkstra")
     public ResponseEntity<RouteResponse> dijkstra(@Valid @RequestBody RouteRequest request) {
         return ResponseEntity.ok(routeService.findDijkstra(request));
     }
@@ -51,7 +51,7 @@ public class RouteController {
             @ApiResponse(responseCode = "400", description = "Invalid request body"),
             @ApiResponse(responseCode = "404", description = "Source or target node was not found")
     })
-    @PostMapping({"/astarRun", "/astar"})
+    @PostMapping("/astar")
     public ResponseEntity<RouteResponse> astar(@Valid @RequestBody RouteRequest request) {
         return ResponseEntity.ok(routeService.findAstar(request));
     }
@@ -62,14 +62,14 @@ public class RouteController {
             @ApiResponse(responseCode = "400", description = "Invalid request body"),
             @ApiResponse(responseCode = "404", description = "Source or target node was not found")
     })
-    @PostMapping({"/compareRun", "/compare"})
+    @PostMapping("/compare")
     public ResponseEntity<RouteCompareResponse> compare(@Valid @RequestBody RouteRequest request) {
         return ResponseEntity.ok(routeService.compare(request));
     }
 
     @Operation(summary = "List all nodes in the road network")
     @ApiResponse(responseCode = "200", description = "Network nodes")
-    @GetMapping({"/nodesList", "/nodes"})
+    @GetMapping("/nodes")
     public ResponseEntity<List<NodeResponse>> listNodes() {
         return ResponseEntity.ok(routeService.listNodes());
     }

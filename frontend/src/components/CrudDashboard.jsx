@@ -170,20 +170,10 @@ export default function CrudDashboard() {
         blocked: Boolean(e.blocked)
       }));
 
-      const fetchedNodesData = nodesData.status === 'fulfilled' && Array.isArray(nodesData.value) && nodesData.value.length > 0 ? nodesData.value : null;
-      const finalNodes = fetchedNodesData ? normalizedFetchedNodes : getStoredData('nodes', normalizedFetchedNodes);
-
-      const fetchedEdgesData = edgesData.status === 'fulfilled' && Array.isArray(edgesData.value) && edgesData.value.length > 0 ? edgesData.value : null;
-      const finalEdges = fetchedEdgesData ? normalizedFetchedEdges : getStoredData('edges', normalizedFetchedEdges);
-
       const fetchedItems = itemsData.status === 'fulfilled' && Array.isArray(itemsData.value) && itemsData.value.length > 0 ? itemsData.value : null;
       const finalItems = fetchedItems || getStoredData('items', INITIAL_ITEMS);
-
-      const fetchedHelis = helisData.status === 'fulfilled' && Array.isArray(helisData.value) && helisData.value.length > 0 ? helisData.value : null;
-      const finalHelis = fetchedHelis || getStoredData('helicopters', INITIAL_HELICOPTERS);
-
-      const fetchedZones = sosData.status === 'fulfilled' && Array.isArray(sosData.value) && sosData.value.length > 0 ? sosData.value : null;
-      const finalZones = fetchedZones || getStoredData('zones', INITIAL_DISASTER_ZONES);
+      const finalHelis = getStoredData('helicopters', helisData.status === 'fulfilled' && Array.isArray(helisData.value) && helisData.value.length > 0 ? helisData.value : INITIAL_HELICOPTERS);
+      const finalZones = getStoredData('zones', sosData.status === 'fulfilled' && Array.isArray(sosData.value) && sosData.value.length > 0 ? sosData.value : INITIAL_DISASTER_ZONES);
 
       setNodes(finalNodes);
       setEdges(finalEdges);
